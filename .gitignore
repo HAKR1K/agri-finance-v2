@@ -1,0 +1,23 @@
+# 🛑 Ignore Dependencies
+node_modules
+*/node_modules
+
+# 🛑 Ignore Builds
+dist
+*/dist
+build
+*/build
+
+# 🛑 Ignore Environment Secrets (Crucial)
+.env
+*/.env
+backend/.env
+frontend/.env
+
+# 🛑 Ignore System Files
+.DS_Store
+Thumbs.db
+
+# 🛑 Ignore Logs
+*.log
+npm-debug.log

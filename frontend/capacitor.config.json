@@ -1,0 +1,9 @@
+{
+  "appId": "com.karthik.agrifinance",
+  "appName": "AgriFinance",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}
