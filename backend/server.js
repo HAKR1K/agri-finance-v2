@@ -21,7 +21,8 @@ app.use(cors({
         process.env.CLIENT_URL,            // Allows your Vercel website
         "http://localhost:5173",
         'https://agrifinance-ji4uxojbw-agri-finance.vercel.app',          // Allows local web testing
-        "http://localhost"                 // Allows the Android App!
+        "http://localhost",
+        /\.vercel\.app$/               // Allows the Android App!
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
