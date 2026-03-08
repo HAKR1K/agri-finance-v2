@@ -16,15 +16,27 @@ const app = express();
 
 // 🛡️ SECURITY MIDDLEWARE
 app.use(helmet());
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+    "http://localhost",
+    "https://agrifinance-app-git-develop-agri-finance.vercel.app", // Added your current staging URL
+];
+
 app.use(cors({
-    origin: [
-        process.env.CLIENT_URL,            // Allows your Vercel website
-        "http://localhost:5173",
-        'https://agrifinance-ji4uxojbw-agri-finance.vercel.app',          // Allows local web testing
-        "http://localhost",
-        /\.vercel\.app$/               // Allows the Android App!
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+
+        const isVercelPreview = origin.endsWith(".vercel.app") && origin.includes("agrifinance-app");
+
+        if (allowedOrigins.includes(origin) || isVercelPreview) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Added OPTIONS for preflight
     credentials: true
 }));
 app.use(express.json());
