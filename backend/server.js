@@ -47,15 +47,14 @@ const authMiddleware = (req, res, next) => {
 // 📧 UPDATED EMAIL CONFIG (Optimized for Render/Cloud)
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true, 
+  port: 587,
+  secure: false, // Must be false for 587
+  requireTLS: true, // Forces secure connection
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  connectionTimeout: 10000, // 🔟 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000
+  connectionTimeout: 20000, // Increase to 20s for cloud lag
 });
 
 // Verify connection configuration on startup
