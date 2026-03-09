@@ -12,11 +12,18 @@
 
 
 
+// ⚙️ frontend/src/config.js
 
-// Logic to switch between Local, Develop, and Production
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const isDevelop = window.location.hostname.includes('develop') || window.location.hostname.includes('8j5gjynth');
+const hostname = window.location.hostname;
+
+// 1. Check if we are running locally
+const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+
+// 2. Check if this is a Vercel "Develop" or "Preview" deployment
+const isDevelop = hostname.includes('develop') || hostname.includes('8j5gjynth') || hostname.includes('vercel.app');
 
 export const API_BASE_URL = isLocal 
   ? 'http://localhost:10000/api' 
-  : 'https://agrifinance-app.onrender.com/api'; // Your Develop Backend URL
+  : isDevelop 
+    ? 'https://agrifinance-app.onrender.com/api' // 👈 YOUR DEVELOP BACKEND
+    : 'https://agri-backend-i38f.onrender.com/api'; // YOUR MAIN BACKEND

@@ -17,24 +17,24 @@ const app = express();
 // 🛡️ SECURITY MIDDLEWARE
 app.use(helmet());
 
+
 const allowedOrigins = [
     "http://localhost:5173",
-    "https://agrifinance-app.vercel.app", // Main Production
-    "https://agrifinance-app-git-develop-agri-finance.vercel.app" // Main Develop
+    "https://agrifinance-app.vercel.app",
+    "https://agrifinance-app-git-develop-agri-finance.vercel.app"
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps/Postman)
         if (!origin) return callback(null, true);
 
-        // ✅ DYNAMIC CHECK: Allow any Vercel URL belonging to your project
+        // ✅ Allow any Vercel URL that contains "agrifinance"
         const isVercelPreview = origin.includes("vercel.app") && origin.includes("agrifinance");
 
         if (allowedOrigins.includes(origin) || isVercelPreview) {
             callback(null, true);
         } else {
-            console.log("🚫 CORS Blocked on Develop Backend:", origin);
+            console.log("CORS Blocked on Develop Backend:", origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
