@@ -12,6 +12,9 @@ const FarmerDetails = () => {
   const navigate = useNavigate();
   const [farmer, setFarmer] = useState(null);
   
+  // Selection State
+  const [activeEditSection, setActiveEditSection] = useState(null); 
+
   // Transaction State
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]); 
   const [type, setType] = useState('Money Lent'); 
@@ -19,7 +22,7 @@ const FarmerDetails = () => {
   const [editingId, setEditingId] = useState(null); 
   const [amount, setAmount] = useState('');
   
-  // Fertilizer/Yield State
+  // Fertilizer/Yield State (Restored Features)
   const [fertName, setFertName] = useState(''); 
   const [quantity, setQuantity] = useState(''); 
   const [pricePerUnit, setPricePerUnit] = useState('');
@@ -27,10 +30,10 @@ const FarmerDetails = () => {
   const [quintals, setQuintals] = useState(''); 
   const [pricePerQuintal, setPricePerQuintal] = useState('');
 
-  // 🔵 Miscellaneous Specific State
-  const [miscType, setMiscType] = useState('Labour'); // Labour, Machine, Others
-  const [miscCount, setMiscCount] = useState('');     // Count (Labor) or Hours (Machine)
-  const [miscRate, setMiscRate] = useState('');       // Wage or Hourly Rate
+  // 🔵 Miscellaneous Specific State (Restored Features)
+  const [miscType, setMiscType] = useState('Labour'); 
+  const [miscCount, setMiscCount] = useState('');     
+  const [miscRate, setMiscRate] = useState('');       
 
   const API_URL = `${API_BASE_URL}/farmers/${id}`;
 
@@ -40,7 +43,7 @@ const FarmerDetails = () => {
     fetchFarmerData(); 
   }, [id, navigate]);
 
-  // 🧮 Auto-Calculate Amount (Preserved Feature)
+  // 🧮 Auto-Calculate Amount (Restored logic for automated totals)
   useEffect(() => {
     if (type === 'Fertilizer') {
         const qty = parseFloat(quantity) || 0; 
@@ -75,7 +78,6 @@ const FarmerDetails = () => {
       } catch (error) { alert("Error updating status"); }
   };
 
-  // --- 🧮 FINANCIALS (Preserved Feature) ---
   const getFinancials = () => {
       if (!farmer) return { dues: 0, paid: 0, balance: 0 };
       const dues = farmer.transactions
@@ -90,7 +92,6 @@ const FarmerDetails = () => {
 
   const { dues, paid, balance } = getFinancials();
 
-  // --- 📤 NATIVE SHARE FUNCTION (Optimized for APK) ---
   const handleShare = async () => {
     if (!farmer) return;
     const isSurplus = balance < 0; 
@@ -105,7 +106,6 @@ const FarmerDetails = () => {
     }
   };
 
-  // --- HELPERS ---
   const formatDate = (isoString) => {
     if (!isoString) return "-";
     const d = new Date(isoString);
@@ -117,18 +117,48 @@ const FarmerDetails = () => {
 
   const formatAmount = (value) => value ? Number(value).toLocaleString('en-IN') : "0";
 
-  const calculateTotal = (transactions) => transactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-
-  const calculateCashNet = (transactions) => {
-      let lent = 0; let repaid = 0;
-      transactions.forEach(t => {
-          if (t.type === 'Money Lent') lent += t.amount;
-          if (t.type === 'Repayment') repaid += t.amount;
-      });
-      return lent - repaid; 
+  const handleEditClick = (t) => {
+    setEditingId(t._id); 
+    setDate(t.date.split('T')[0]); 
+    setType(t.type); 
+    setRemarks(t.details || ''); 
+    setAmount(t.amount);
+    
+    if (t.type === 'Fertilizer') { 
+      setFertName(t.fertilizer_name || ''); 
+      setQuantity(t.quantity || ''); 
+      setPricePerUnit(t.price_per_unit || ''); 
+    }
+    else if (t.type === 'Yield') { 
+      setBags(t.bag_count || ''); 
+      setQuintals(t.quintals || ''); 
+      setPricePerQuintal(t.price_per_quintal || ''); 
+    }
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
-  // --- 💾 SUBMIT (Preserved Logic) ---
+  const handleCancel = () => {
+    setEditingId(null); 
+    setActiveEditSection(null);
+    setAmount(''); setRemarks(''); setFertName(''); setQuantity(''); setPricePerUnit(''); setBags(''); setQuintals(''); setPricePerQuintal('');
+    setMiscType('Labour'); setMiscCount(''); setMiscRate('');
+    setDate(new Date().toISOString().split('T')[0]); setType('Money Lent');
+  };
+
+  const handleDelete = async () => {
+    if (!editingId) return alert("Please select a record to delete first.");
+    const confirmDelete = window.confirm("Are you sure you want to delete this transaction?");
+    if (!confirmDelete) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/transaction/${editingId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("✅ Deleted!");
+      handleCancel(); fetchFarmerData();
+    } catch (error) { alert("Error deleting record"); }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     let finalAmount = amount; 
@@ -163,19 +193,6 @@ const FarmerDetails = () => {
     } catch (error) { alert("Error saving transaction"); }
   };
 
-  const handleEditClick = (t) => {
-    setEditingId(t._id); setDate(t.date.split('T')[0]); setType(t.type); setRemarks(t.details || ''); setAmount(t.amount);
-    if (t.type === 'Fertilizer') { setFertName(t.fertilizer_name || ''); setQuantity(t.quantity || ''); setPricePerUnit(t.price_per_unit || ''); }
-    else if (t.type === 'Yield') { setBags(t.bag_count || ''); setQuintals(t.quintals || ''); setPricePerQuintal(t.price_per_quintal || ''); }
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  };
-
-  const handleCancel = () => {
-    setEditingId(null); setAmount(''); setRemarks(''); setFertName(''); setQuantity(''); setPricePerUnit(''); setBags(''); setQuintals(''); setPricePerQuintal('');
-    setMiscType('Labour'); setMiscCount(''); setMiscRate('');
-    setDate(new Date().toISOString().split('T')[0]); setType('Money Lent');
-  };
-
   if (!farmer) return <div style={{textAlign:"center", padding:"50px"}}>Loading...</div>;
 
   const moneyTransactions = farmer.transactions.filter(t => t.type === 'Money Lent' || t.type === 'Repayment');
@@ -183,7 +200,7 @@ const FarmerDetails = () => {
   const fertilizerTransactions = farmer.transactions.filter(t => t.type === 'Fertilizer');
   const miscTransactions = farmer.transactions.filter(t => t.type === 'Miscellaneous');
 
-  // --- 🎨 NATIVE STYLES ---
+  // Styles (Restored UI Logic)
   const containerStyle = {
     paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top, 50px)' : '20px',
     paddingLeft: "15px", paddingRight: "15px", paddingBottom: "40px",
@@ -193,16 +210,27 @@ const FarmerDetails = () => {
 
   const inputStyle = { padding: "12px", border: "1px solid #ddd", borderRadius: "10px", width: "100%", fontSize: "16px", boxSizing: "border-box" };
   const thStyle = { padding: "10px 5px", textAlign: "left", fontSize: "13px", borderBottom: "1px solid #ddd" };
-  const tdStyle = { padding: "10px 5px", fontSize: "14px", borderBottom: "1px solid #eee", color: "#333" };
+  const tdStyle = { padding: "10px 5px", fontSize: "14px", borderBottom: "1px solid #eee", color: "#333", verticalAlign: "top" };
+  
+  // 🟢 Amount Wrapping Fix
+  const noteTdStyle = { ...tdStyle, wordBreak: "break-word" };
+  const amountTdStyle = { ...tdStyle, fontWeight: "bold", textAlign: "right", whiteSpace: "nowrap" };
+
+  const headerBtnStyle = (isActive, color) => ({
+    background: isActive ? color : "#f0f2f5",
+    color: isActive ? "white" : "#333",
+    border: "none", borderRadius: "8px", padding: "5px 12px", fontSize: "12px", fontWeight: "bold", cursor: "pointer"
+  });
 
   return (
     <div style={containerStyle}>
-      {/* 🔝 Pushed Down Header */}
+      {/* Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", padding: "15px", borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: "20px" }}>
         <button onClick={() => navigate(-1)} style={{ cursor: "pointer", padding:"8px 12px", backgroundColor: "#f0f2f5", color: "#333", border: "none", borderRadius: "10px", fontWeight: "bold" }}>⬅ Back</button>
         <button onClick={handleShare} style={{ cursor: "pointer", padding:"8px 15px", backgroundColor: "#E3F2FD", color: "#1565C0", border: "none", borderRadius: "20px", fontWeight: "bold" }}>📤 Share</button>
       </div>
 
+      {/* Profile Summary */}
       <div style={{textAlign:"center", marginBottom: "20px"}}>
         <h1 style={{ margin: "0", fontSize: "24px", color: farmer.isActive ? "#1A1A1A" : "#aaa" }}>{farmer.name}</h1>
         <p style={{ margin: "5px 0", color: "#666", fontSize: "14px" }}>{farmer.village} | {farmer.paddy_variety}</p>
@@ -217,85 +245,113 @@ const FarmerDetails = () => {
         </button>
       </div>
 
-      {/* --- ALL 4 TABLES PRESERVED --- */}
+      {/* --- Restored Tables with Amount Fix --- */}
 
-      {/* Yield (Yellow) */}
-      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px" }}>
-        <h3 style={{ color: "#fab505", borderBottom: "2px solid #fab505", paddingBottom: "5px", margin: "0 0 10px 0", fontSize: "16px" }}>🌾 Yield History</h3>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><th style={thStyle}>Date</th><th style={thStyle}>Bags</th><th style={thStyle}>Value</th><th></th></tr></thead>
+      {/* Yield (Harvest) */}
+      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px", border: activeEditSection === 'yield' ? "2px solid #fab505" : "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", minHeight: "40px" }}>
+          <h3 style={{ color: "#fab505", borderBottom: "2px solid #fab505", paddingBottom: "5px", margin: 0, fontSize: "16px" }}>🌾 Yield History</h3>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {activeEditSection === 'yield' && editingId && <button onClick={handleDelete} style={{background:"#FFEBEE", color:"#D32F2F", border:"none", borderRadius:"8px", padding:"5px 10px", fontSize:"12px", fontWeight:"bold"}}>🗑️ Delete</button>}
+            <button onClick={() => { setActiveEditSection(activeEditSection === 'yield' ? null : 'yield'); if(activeEditSection === 'yield') handleCancel(); }} style={headerBtnStyle(activeEditSection === 'yield', "#fab505")}>
+              {activeEditSection === 'yield' ? "Done" : "Edit"}
+            </button>
+          </div>
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead><tr>{activeEditSection === 'yield' && <th style={{width:"30px"}}></th>}<th style={{width:"70px"}}>Date</th><th style={thStyle}>Bags</th><th style={{width:"90px", textAlign:"right"}}>Value</th></tr></thead>
             <tbody>
-                {yieldTransactions.length === 0 && <tr><td colSpan="4" style={{textAlign:"center", padding:"10px", color:"#aaa"}}>No records.</td></tr>}
                 {yieldTransactions.slice().reverse().map(t => (
-                    <tr key={t._id}>
+                    <tr key={t._id} onClick={() => activeEditSection === 'yield' && handleEditClick(t)} style={{ backgroundColor: editingId === t._id ? "#FFF9C4" : "transparent" }}>
+                        {activeEditSection === 'yield' && <td style={tdStyle}><input type="radio" checked={editingId === t._id} readOnly /></td>}
                         <td style={tdStyle}>{formatDate(t.date)}</td>
-                        <td style={tdStyle}>{t.bag_count} <span style={{fontSize:"11px", color:"#888"}}>({t.quintals}Q)</span></td>
-                        <td style={{...tdStyle, fontWeight:"bold", color:"green"}}>₹{formatAmount(t.amount)}</td>
-                        <td style={tdStyle}><button onClick={() => handleEditClick(t)} style={{border:"none", background:"none"}}>✏️</button></td>
+                        <td style={noteTdStyle}>{t.bag_count} <span style={{fontSize:"11px", color:"#888"}}>({t.quintals}Q)</span></td>
+                        <td style={{...amountTdStyle, color:"green"}}>₹{formatAmount(t.amount)}</td>
                     </tr>
                 ))}
             </tbody>
         </table>
       </div>
 
-      {/* Cash (Red) */}
-      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px" }}>
-        <h3 style={{ color: "#d32f2f", borderBottom: "2px solid #d32f2f", paddingBottom: "5px", margin: "0 0 10px 0", fontSize: "16px" }}>💰 Cash</h3>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><th style={thStyle}>Date</th><th style={thStyle}>Note</th><th style={thStyle}>Amt</th><th></th></tr></thead>
+      {/* Cash Transactions */}
+      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px", border: activeEditSection === 'cash' ? "2px solid #d32f2f" : "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", minHeight: "40px" }}>
+          <h3 style={{ color: "#d32f2f", borderBottom: "2px solid #d32f2f", paddingBottom: "5px", margin: 0, fontSize: "16px" }}>💰 Cash</h3>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {activeEditSection === 'cash' && editingId && <button onClick={handleDelete} style={{background:"#FFEBEE", color:"#D32F2F", border:"none", borderRadius:"8px", padding:"5px 10px", fontSize:"12px", fontWeight:"bold"}}>🗑️ Delete</button>}
+            <button onClick={() => { setActiveEditSection(activeEditSection === 'cash' ? null : 'cash'); if(activeEditSection === 'cash') handleCancel(); }} style={headerBtnStyle(activeEditSection === 'cash', "#d32f2f")}>
+              {activeEditSection === 'cash' ? "Done" : "Edit"}
+            </button>
+          </div>
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead><tr>{activeEditSection === 'cash' && <th style={{width:"30px"}}></th>}<th style={{width:"70px"}}>Date</th><th style={thStyle}>Note</th><th style={{width:"90px", textAlign:"right"}}>Amt</th></tr></thead>
             <tbody>
-                {moneyTransactions.length === 0 && <tr><td colSpan="4" style={{textAlign:"center", padding:"10px", color:"#aaa"}}>No records.</td></tr>}
                 {moneyTransactions.slice().reverse().map(t => (
-                    <tr key={t._id}>
+                    <tr key={t._id} onClick={() => activeEditSection === 'cash' && handleEditClick(t)} style={{ backgroundColor: editingId === t._id ? "#FFF9C4" : "transparent" }}>
+                        {activeEditSection === 'cash' && <td style={tdStyle}><input type="radio" checked={editingId === t._id} readOnly /></td>}
                         <td style={tdStyle}>{formatDate(t.date)}</td>
-                        <td style={tdStyle}>{t.details || '-'}</td>
-                        <td style={{...tdStyle, fontWeight:"bold", color: t.type==='Repayment'?"green":"red"}}>{t.type==='Repayment'?"+":"-"} {formatAmount(t.amount)}</td>
-                        <td style={tdStyle}><button onClick={() => handleEditClick(t)} style={{border:"none", background:"none"}}>✏️</button></td>
+                        <td style={noteTdStyle}>{t.details || '-'}</td>
+                        <td style={{...amountTdStyle, color: t.type==='Repayment'?"green":"red"}}>{t.type==='Repayment'?"+":"-"} {formatAmount(t.amount)}</td>
                     </tr>
                 ))}
             </tbody>
         </table>
       </div>
 
-      {/* Goods (Green) */}
-      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px" }}>
-        <h3 style={{ color: "#2e7d32", borderBottom: "2px solid #2e7d32", paddingBottom: "5px", margin: "0 0 10px 0", fontSize: "16px" }}>🌱 Goods</h3>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><th style={thStyle}>Date</th><th style={thStyle}>Item</th><th style={{...thStyle, textAlign: "right"}}>Total</th><th></th></tr></thead>
+      {/* Goods/Fertilizer */}
+      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px", border: activeEditSection === 'goods' ? "2px solid #2e7d32" : "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", minHeight: "40px" }}>
+          <h3 style={{ color: "#2e7d32", borderBottom: "2px solid #2e7d32", paddingBottom: "5px", margin: 0, fontSize: "16px" }}>🌱 Goods</h3>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {activeEditSection === 'goods' && editingId && <button onClick={handleDelete} style={{background:"#FFEBEE", color:"#D32F2F", border:"none", borderRadius:"8px", padding:"5px 10px", fontSize:"12px", fontWeight:"bold"}}>🗑️ Delete</button>}
+            <button onClick={() => { setActiveEditSection(activeEditSection === 'goods' ? null : 'goods'); if(activeEditSection === 'goods') handleCancel(); }} style={headerBtnStyle(activeEditSection === 'goods', "#2e7d32")}>
+              {activeEditSection === 'goods' ? "Done" : "Edit"}
+            </button>
+          </div>
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead><tr>{activeEditSection === 'goods' && <th style={{width:"30px"}}></th>}<th style={{width:"70px"}}>Date</th><th style={thStyle}>Item</th><th style={{width:"90px", textAlign: "right"}}>Total</th></tr></thead>
             <tbody>
-                {fertilizerTransactions.length === 0 && <tr><td colSpan="4" style={{textAlign:"center", padding:"10px", color:"#aaa"}}>No records.</td></tr>}
                 {fertilizerTransactions.slice().reverse().map(t => (
-                    <tr key={t._id}>
+                    <tr key={t._id} onClick={() => activeEditSection === 'goods' && handleEditClick(t)} style={{ backgroundColor: editingId === t._id ? "#FFF9C4" : "transparent" }}>
+                        {activeEditSection === 'goods' && <td style={tdStyle}><input type="radio" checked={editingId === t._id} readOnly /></td>}
                         <td style={tdStyle}>{formatDate(t.date)}</td>
-                        <td style={tdStyle}>{t.fertilizer_name} <br/><span style={{fontSize:"11px", color:"#888"}}>(Qty: {t.quantity})</span></td>
-                        <td style={{...tdStyle, fontWeight:"bold", color:"red", textAlign: "right"}}>₹{formatAmount(t.amount)}</td>
-                        <td style={tdStyle}><button onClick={() => handleEditClick(t)} style={{border:"none", background:"none"}}>✏️</button></td>
+                        <td style={noteTdStyle}>{t.fertilizer_name} <br/><span style={{fontSize:"11px", color:"#888"}}>(Qty: {t.quantity})</span></td>
+                        <td style={{...amountTdStyle, color:"red"}}>₹{formatAmount(t.amount)}</td>
                     </tr>
                 ))}
             </tbody>
         </table>
       </div>
 
-      {/* Misc (Blue) */}
-      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px" }}>
-        <h3 style={{ color: "#1976D2", borderBottom: "2px solid #1976D2", paddingBottom: "5px", margin: "0 0 10px 0", fontSize: "16px" }}>🔵 Miscellaneous</h3>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><th style={thStyle}>Date</th><th style={thStyle}>Details</th><th style={{...thStyle, textAlign: "right"}}>Cost</th><th></th></tr></thead>
+      {/* Miscellaneous (Restored logic) */}
+      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "16px", marginBottom: "20px", border: activeEditSection === 'misc' ? "2px solid #1976D2" : "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", minHeight: "40px" }}>
+          <h3 style={{ color: "#1976D2", borderBottom: "2px solid #1976D2", paddingBottom: "5px", margin: 0, fontSize: "16px" }}>🔵 Miscellaneous</h3>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {activeEditSection === 'misc' && editingId && <button onClick={handleDelete} style={{background:"#FFEBEE", color:"#D32F2F", border:"none", borderRadius:"8px", padding:"5px 10px", fontSize:"12px", fontWeight:"bold"}}>🗑️ Delete</button>}
+            <button onClick={() => { setActiveEditSection(activeEditSection === 'misc' ? null : 'misc'); if(activeEditSection === 'misc') handleCancel(); }} style={headerBtnStyle(activeEditSection === 'misc', "#1976D2")}>
+              {activeEditSection === 'misc' ? "Done" : "Edit"}
+            </button>
+          </div>
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead><tr>{activeEditSection === 'misc' && <th style={{width:"30px"}}></th>}<th style={{width:"70px"}}>Date</th><th style={thStyle}>Details</th><th style={{width:"90px", textAlign: "right"}}>Cost</th></tr></thead>
             <tbody>
-                {miscTransactions.length === 0 && <tr><td colSpan="4" style={{textAlign:"center", padding:"10px", color:"#aaa"}}>No records.</td></tr>}
                 {miscTransactions.slice().reverse().map(t => (
-                    <tr key={t._id}>
+                    <tr key={t._id} onClick={() => activeEditSection === 'misc' && handleEditClick(t)} style={{ backgroundColor: editingId === t._id ? "#FFF9C4" : "transparent" }}>
+                        {activeEditSection === 'misc' && <td style={tdStyle}><input type="radio" checked={editingId === t._id} readOnly /></td>}
                         <td style={tdStyle}>{formatDate(t.date)}</td>
-                        <td style={tdStyle}>{t.details}</td>
-                        <td style={{...tdStyle, fontWeight:"bold", color:"#C62828", textAlign: "right"}}>₹{formatAmount(t.amount)}</td>
-                        <td style={tdStyle}><button onClick={() => handleEditClick(t)} style={{border:"none", background:"none"}}>✏️</button></td>
+                        <td style={noteTdStyle}>{t.details}</td>
+                        <td style={{...amountTdStyle, color:"#C62828"}}>₹{formatAmount(t.amount)}</td>
                     </tr>
                 ))}
             </tbody>
         </table>
       </div>
 
-      {/* --- FULL FORM PRESERVED --- */}
+      {/* --- Full Transaction Form (Restored Features) --- */}
       {farmer.isActive && (
         <div style={{ backgroundColor: editingId ? "#fff3e0" : "#fff", padding: "24px", borderRadius: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)" }}>
             <h3 style={{ margin: "0 0 15px 0", fontSize: "18px", textAlign: "center" }}>{editingId ? "✏️ Edit Record" : "➕ Add Transaction"}</h3>
@@ -309,6 +365,7 @@ const FarmerDetails = () => {
                     <option value="Repayment">🟢 Repayment</option>
                 </select>
 
+                {/* Sub-Form for Miscellaneous */}
                 {type === 'Miscellaneous' && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "12px", background: "#E3F2FD", borderRadius: "14px" }}>
                         <div style={{display:"flex", gap:"10px"}}>
@@ -325,8 +382,13 @@ const FarmerDetails = () => {
                     </div>
                 )}
 
+                {/* Sub-Form for Harvest */}
                 {type === 'Yield' && (<div style={{display:"flex", gap:"10px"}}><input type="number" placeholder="Bags" value={bags} onChange={(e) => setBags(e.target.value)} style={inputStyle} /><input type="number" placeholder="Quintals" value={quintals} onChange={(e) => setQuintals(e.target.value)} style={inputStyle} /><input type="number" placeholder="Price/Q" value={pricePerQuintal} onChange={(e) => setPricePerQuintal(e.target.value)} style={inputStyle} /></div>)}
+                
+                {/* Sub-Form for Goods */}
                 {type === 'Fertilizer' && (<div style={{display:"flex", gap:"10px", flexDirection: "column"}}><input type="text" placeholder="Item Name" value={fertName} onChange={(e) => setFertName(e.target.value)} style={inputStyle} /><div style={{display:"flex", gap:"10px"}}><input type="number" placeholder="Qty" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} /><input type="number" placeholder="Price" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} style={inputStyle} /></div></div>)}
+                
+                {/* Standard Amount Input */}
                 {(type === 'Money Lent' || type === 'Repayment' || (type === 'Miscellaneous' && miscType === 'Others')) && (<input type="number" placeholder="Amount (₹)" value={amount} onChange={(e) => setAmount(e.target.value)} style={inputStyle} />)}
                 
                 <input type="text" placeholder="Remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} style={inputStyle} />
