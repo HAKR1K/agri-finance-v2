@@ -20,11 +20,15 @@ app.use(helmet());
 const allowedOrigins = [
     "http://localhost:5173",
     "https://agrifinance-app.vercel.app",
-    "https://agrifinance-app-git-develop-agri-finance.vercel.app"
+    "https://agrifinance-app-git-develop-agri-finance.vercel.app",
+    "http://localhost",        // Essential for Android APK
+    "capacitor://localhost",   // Essential for iOS/Android Capacitor
+    "http://10.0.2.2"          // Allows Android Emulator to connect
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
+        // ✅ Allow mobile apps & tool requests (like Postman/Insomnia)
         if (!origin) return callback(null, true);
 
         // ✅ Allow any Vercel URL that contains "agrifinance"
@@ -33,15 +37,15 @@ app.use(cors({
         if (allowedOrigins.includes(origin) || isVercelPreview) {
             callback(null, true);
         } else {
-            console.log("CORS Blocked on Develop Backend:", origin);
+            // This log will show up in Render Logs if someone is blocked
+            console.log("❌ CORS Blocked Origin:", origin); 
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // OPTIONS is vital for preflight
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 app.use(express.json());
 
 // ✅ DB CONNECTION
