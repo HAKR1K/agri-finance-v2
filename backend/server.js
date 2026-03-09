@@ -17,7 +17,6 @@ const app = express();
 // 🛡️ SECURITY MIDDLEWARE
 app.use(helmet());
 
-
 const allowedOrigins = [
     "http://localhost:5173",
     "https://agrifinance-app.vercel.app",
@@ -150,7 +149,7 @@ app.put('/api/auth/reset-password/:token', async (req, res) => {
     } catch (err) { res.status(500).send("Server Error"); }
 });
 
-// --- 🏠 VILLAGE & FARMER ROUTES ---
+// --- 🏠 VILLAGE ROUTES ---
 
 app.get('/api/villages', authMiddleware, async (req, res) => {
     const villages = await Village.find({ user: req.user.id });
@@ -164,6 +163,30 @@ app.post('/api/villages', authMiddleware, async (req, res) => {
         res.json(newVillage);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// ✏️ UPDATE VILLAGE NAME (Added to handle VillageList Edit)
+app.put('/api/villages/:id', authMiddleware, async (req, res) => {
+    try {
+        const village = await Village.findOneAndUpdate(
+            { _id: req.params.id, user: req.user.id },
+            { name: req.body.name },
+            { new: true }
+        );
+        if (!village) return res.status(404).json({ error: "Village not found" });
+        res.json(village);
+    } catch (err) { res.status(500).json({ error: "Update failed" }); }
+});
+
+// 🗑️ DELETE VILLAGE (Added to handle VillageList Delete)
+app.delete('/api/villages/:id', authMiddleware, async (req, res) => {
+    try {
+        const village = await Village.findOneAndDelete({ _id: req.params.id, user: req.user.id });
+        if (!village) return res.status(404).json({ error: "Village not found" });
+        res.json({ message: "Deleted" });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- 👨‍🌾 FARMER ROUTES ---
 
 app.get('/api/farmers', authMiddleware, async (req, res) => {
     const { village } = req.query;
@@ -185,7 +208,6 @@ app.get('/api/farmers/:id', authMiddleware, async (req, res) => {
     res.json(farmer);
 });
 
-// ✏️ UPDATE FARMER PROFILE (Handles Name/Variety Edits from VillageDetails)
 app.put('/api/farmers/:id', authMiddleware, async (req, res) => {
     try {
         const farmer = await Farmer.findOneAndUpdate(
@@ -198,11 +220,9 @@ app.put('/api/farmers/:id', authMiddleware, async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Update failed" }); }
 });
 
-// 🗑️ DELETE FARMER PERMANENTLY
 app.delete('/api/farmers/:id', authMiddleware, async (req, res) => {
     try {
-        const farmer = await Farmer.findOneAndDelete({ _id: req.params.id, user: req.user.id });
-        if (!farmer) return res.status(404).json({ error: "Farmer not found" });
+        await Farmer.findOneAndDelete({ _id: req.params.id, user: req.user.id });
         res.json({ message: "Deleted" });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -260,12 +280,10 @@ app.get('/api/analysis', authMiddleware, async (req, res) => {
 
         farmers.forEach(farmer => {
             farmer.transactions.forEach(t => {
-                // Cash stats
                 if (t.type === 'Money Lent') {
                     totalInvestment += (t.amount || 0);
                     villageStats[farmer.village] = (villageStats[farmer.village] || 0) + t.amount;
                 }
-                // Fertilizer/Goods stats
                 if (t.type === 'Fertilizer') {
                     totalFertilizerCost += (t.amount || 0);
                     const fName = t.fertilizer_name || "Unknown";
