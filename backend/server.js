@@ -23,7 +23,10 @@ const allowedOrigins = [
     "https://agrifinance-app-git-develop-agri-finance.vercel.app",
     "http://localhost",        // MUST ADD THIS for Android
     "capacitor://localhost",   // MUST ADD THIS for iOS
+    "http://10.0.2.2" 
 ];
+
+
 
 app.use(cors({
     origin: function (origin, callback) {
