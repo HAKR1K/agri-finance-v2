@@ -21,9 +21,8 @@ const allowedOrigins = [
     "http://localhost:5173",
     "https://agrifinance-app.vercel.app",
     "https://agrifinance-app-git-develop-agri-finance.vercel.app",
-    "http://localhost",        // Essential for Android APK
-    "capacitor://localhost",   // Essential for iOS/Android Capacitor
-    "http://10.0.2.2"          // Allows Android Emulator to connect
+    "http://localhost",        // MUST ADD THIS for Android
+    "capacitor://localhost",   // MUST ADD THIS for iOS
 ];
 
 app.use(cors({
