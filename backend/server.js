@@ -21,21 +21,28 @@ const allowedOrigins = [
     process.env.CLIENT_URL,
     "http://localhost:5173",
     "http://localhost",
-    "https://agrifinance-app-git-develop-agri-finance.vercel.app",
+    "https://agrifinance-app.vercel.app", // Production
+    "https://agrifinance-app-git-develop-agri-finance.vercel.app" // Main Develop
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
+        // 1. Allow mobile apps/Postman (no origin)
         if (!origin) return callback(null, true);
-        const isVercelPreview = origin.endsWith(".vercel.app") && origin.includes("agrifinance-app");
+
+        // 2. Check if the origin is a Vercel preview link for your project
+        const isVercelPreview = origin.includes("vercel.app") && origin.includes("agri-finance");
+
         if (allowedOrigins.includes(origin) || isVercelPreview) {
             callback(null, true);
         } else {
+            console.log("🚫 CORS Blocked:", origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
