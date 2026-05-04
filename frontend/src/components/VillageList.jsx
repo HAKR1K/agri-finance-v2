@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config'; 
 import { Capacitor } from '@capacitor/core';
+import './VillageList.css'; // 👈 IMPORT THE CSS
 
 const VillageList = () => {
   const [villages, setVillages] = useState([]);
@@ -13,7 +14,6 @@ const VillageList = () => {
   const [selectedVillage, setSelectedVillage] = useState(null);
   
   const navigate = useNavigate();
-  
   const API_URL = `${API_BASE_URL}/villages`;
 
   useEffect(() => {
@@ -46,11 +46,9 @@ const VillageList = () => {
 
     try {
       if (selectedVillage) {
-        // ✏️ UPDATE Village Name
         await axios.put(`${API_URL}/${selectedVillage._id}`, { name: newVillageName }, config);
         alert("✅ Village updated!");
       } else {
-        // ➕ ADD New Village
         await axios.post(API_URL, { name: newVillageName }, config);
         alert("✅ Village added!");
       }
@@ -61,14 +59,14 @@ const VillageList = () => {
 
   const handleDeleteVillage = async () => {
     if (!selectedVillage) return;
-    if (!window.confirm(`⚠️ PERMANENTLY DELETE "${selectedVillage.name}"? This will NOT delete the farmers inside, but they will lose their village link.`)) return;
+    if (!window.confirm(`⚠️ ARCHIVE "${selectedVillage.name}"? This will NOT delete the farmers inside, but they will lose their village link.`)) return;
 
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API_URL}/${selectedVillage._id}`, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
-      alert("🗑️ Village deleted");
+      alert("📦 Village archived");
       resetForm();
       fetchVillages();
     } catch (error) { alert("Error deleting village"); }
@@ -82,7 +80,6 @@ const VillageList = () => {
 
   const handleVillageClick = (village) => {
     if (isSelectionMode) {
-      // If already selected, deselect. Otherwise, select and fill form.
       if (selectedVillage?._id === village._id) {
         setSelectedVillage(null);
         setNewVillageName('');
@@ -95,134 +92,93 @@ const VillageList = () => {
     }
   };
 
-  const containerStyle = {
-    paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top, 50px)' : '20px',
-    paddingLeft: '20px', paddingRight: '20px', paddingBottom: '40px',
-    width: "100%", maxWidth: "500px", margin: "0 auto", display: "flex", 
-    flexDirection: "column", gap: "20px", backgroundColor: "#F4F7FA", 
-    minHeight: "100vh", boxSizing: "border-box"
-  };
-
   return (
-    <div style={containerStyle}>
-        {/* 🔝 Professional Header */}
-        <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "18px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <button 
-              onClick={() => navigate('/')} 
-              style={{ cursor: "pointer", padding:"8px 14px", backgroundColor: "#f8f9fa", border: "1px solid #ddd", borderRadius: "10px", fontWeight: "bold" }}
-            >
-              ← Back
-            </button>
+    <div className="vl-container">
+        
+        <div className="vl-header-card">
+          <div className="vl-header-top" style={{ position: 'relative' }}>
+            <div style={{ flex: 1 }}>
+                <button onClick={() => navigate('/')} className="vl-back-btn">← Back</button>
+            </div>
             
-            <div style={{ display: "flex", gap: "8px" }}>
+            <h2 style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', margin: 0, fontSize: '24px', fontWeight: 900, color: '#0f172a' }}>Villages</h2>
+            
+            <div className="vl-action-group" style={{ flex: 1, justifyContent: 'flex-end', display: 'flex', gap: '8px' }}>
                 {isSelectionMode && selectedVillage && (
-                    <button 
-                      onClick={handleDeleteVillage}
-                      style={{ backgroundColor: "#fff0f0", color: "#fa5252", border: "1px solid #ffaeb1", padding: "8px 14px", borderRadius: "10px", fontWeight: "bold", fontSize: "13px" }}
-                    >
-                      Delete
-                    </button>
+                    <button onClick={handleDeleteVillage} className="vl-delete-btn">Delete</button>
                 )}
                 <button 
                   onClick={() => isSelectionMode ? resetForm() : setIsSelectionMode(true)}
+                  className="vl-mode-btn"
                   style={{ 
-                    backgroundColor: isSelectionMode ? "#1a1a1a" : "#E3F2FD", 
-                    color: isSelectionMode ? "white" : "#2196F3", 
-                    border: "none", padding: "8px 16px", borderRadius: "10px", fontWeight: "bold" 
+                    backgroundColor: isSelectionMode ? "#e2e8f0" : "#eff6ff", 
+                    color: isSelectionMode ? "#1e293b" : "#3b82f6"
                   }}
                 >
-                    {isSelectionMode ? "Done" : "Edit"}
+                  {isSelectionMode ? "Done" : "Edit"}
                 </button>
             </div>
           </div>
         </div>
 
-        <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "800", color: "#1a1a1a", textAlign: "center" }}>
-            📂 Village Records
-        </h1>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div className="vl-list">
           {villages.length === 0 && (
-            <p style={{ textAlign: "center", color: "#888", marginTop: "20px" }}>No villages yet.</p>
+            <p className="vl-empty-text">No villages yet. Add one below.</p>
           )}
-          {villages.map((village, index) => (
-            <div 
-              key={village._id} 
-              onClick={() => handleVillageClick(village)} 
-              style={{ 
-                padding: "18px", 
-                borderRadius: "16px", 
-                backgroundColor: selectedVillage?._id === village._id ? "#E3F2FD" : "#ffffff", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "space-between", 
-                boxShadow: "0 4px 12px rgba(0,0,0,0.04)", 
-                cursor: "pointer", 
-                borderLeft: selectedVillage?._id === village._id ? "6px solid #2196F3" : "6px solid #e0e0e0",
-                transition: "0.2s all ease"
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                <div style={{ 
-                    backgroundColor: selectedVillage?._id === village._id ? "#2196F3" : "#E3F2FD", 
-                    color: selectedVillage?._id === village._id ? "#fff" : "#1565C0", 
-                    width: "32px", height: "32px", borderRadius: "8px", 
-                    display: "flex", alignItems: "center", justifyContent: "center", 
-                    fontWeight: "bold", fontSize: "14px" 
-                }}>
+          {villages.map((village, index) => {
+            const isSelected = selectedVillage?._id === village._id;
+            return (
+              <div 
+                key={village._id} 
+                onClick={() => handleVillageClick(village)} 
+                className={`vl-item-card ${isSelected ? 'vl-selected' : ''}`}
+              >
+                <div className="vl-item-left">
+                  <div className={`vl-index-badge ${isSelected ? 'selected-badge' : ''}`}>
                     {index + 1}
+                  </div>
+                  <strong className="vl-village-name">{village.name}</strong>
                 </div>
-                <strong style={{ fontSize: "17px", color: "#333" }}>{village.name}</strong>
-              </div>
-              {isSelectionMode ? (
-                  <span style={{ fontSize: "12px", color: "#2196F3", fontWeight: "bold" }}>
-                      {selectedVillage?._id === village._id ? "SELECTED" : "TAP TO EDIT"}
+                {isSelectionMode ? (
+                  <span className="vl-item-status" style={{ color: isSelected ? "#60a5fa" : "#334155" }}>
+                    {isSelected ? "SELECTED" : "TAP TO EDIT"}
                   </span>
-              ) : (
-                  <span style={{ color: "#bbb", fontSize: "18px" }}>➜</span>
-              )}
-            </div>
-          ))}
+                ) : (
+                  <span className="vl-item-arrow">➜</span>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* ADD / EDIT FORM */}
-        <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.06)", marginTop: "10px" }}>
-          <h3 style={{ margin: "0 0 15px 0", color: "#1a1a1a", fontSize: "18px", fontWeight: "800", textAlign: "center" }}>
+        <div className="vl-form-card">
+          <h3 className="vl-form-title">
               {selectedVillage ? "✏️ Rename Village" : "➕ Add New Village"}
           </h3>
-          <form onSubmit={handleSaveVillage} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <form onSubmit={handleSaveVillage} className="vl-form">
               <input 
                 type="text" 
                 placeholder="Village Name..." 
                 value={newVillageName} 
                 onChange={(e) => setNewVillageName(e.target.value)} 
-                style={{ 
-                    padding: "14px", 
-                    border: "1px solid #eee", 
-                    borderRadius: "12px", 
-                    fontSize: "16px", 
-                    outline: "none", 
-                    backgroundColor: "#f8f9fa"
-                }} 
+                className="vl-input"
               />
               <button 
                 type="submit" 
+                className="vl-submit-btn"
                 style={{ 
-                    padding: "16px", 
-                    backgroundColor: selectedVillage ? "#2196F3" : "#4CAF50", 
-                    color: "white", 
-                    border: "none", 
-                    borderRadius: "14px", 
-                    fontWeight: "900", 
-                    fontSize: "16px",
-                    boxShadow: selectedVillage ? "0 6px 15px rgba(33, 150, 243, 0.3)" : "0 6px 15px rgba(76, 175, 80, 0.3)"
+                  background: selectedVillage
+                    ? "linear-gradient(135deg, #3b82f6, #1d4ed8)"
+                    : "linear-gradient(135deg, #22c55e, #16a34a)",
+                  boxShadow: selectedVillage
+                    ? "0 6px 20px rgba(59,130,246,0.35)"
+                    : "0 6px 20px rgba(34,197,94,0.35)"
                 }}
               >
                 {selectedVillage ? "UPDATE NAME" : "ADD VILLAGE"}
               </button>
               {isSelectionMode && (
-                  <button type="button" onClick={resetForm} style={{ background: "none", border: "none", color: "#666", fontWeight: "bold", padding: "5px" }}>
+                  <button type="button" onClick={resetForm} className="vl-cancel-link">
                       Cancel
                   </button>
               )}

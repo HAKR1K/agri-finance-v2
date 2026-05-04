@@ -1,4 +1,14 @@
 {
+  "name": "agrifinance-app",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix frontend",
+    "cap:sync": "npm run build && cd frontend && npx cap sync",
+    "cap:open": "cd frontend && npx cap open android",
+    "backend": "npm run dev --prefix backend",
+    "frontend": "npm run dev --prefix frontend"
+  },
   "devDependencies": {
     "concurrently": "^9.2.1"
   }

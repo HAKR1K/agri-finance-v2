@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config'; 
-import { Capacitor } from '@capacitor/core'; // 🔌 Native Notch detection preserved
+import { Capacitor } from '@capacitor/core';
+import './VillageDetails.css';
 
 const VillageDetails = () => {
   const { villageName } = useParams();
@@ -11,11 +12,9 @@ const VillageDetails = () => {
   const [farmers, setFarmers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Selection & Edit Mode States
   const [isSelectionMode, setIsSelectionMode] = useState(false); 
   const [selectedFarmer, setSelectedFarmer] = useState(null); 
   
-  // Form State
   const [name, setName] = useState('');
   const [paddyVariety, setPaddyVariety] = useState('');
 
@@ -48,246 +47,200 @@ const VillageDetails = () => {
     
     try {
       if (selectedFarmer) {
-        // ✏️ UPDATE existing farmer
-        await axios.put(`${API_URL}/${selectedFarmer._id}`, {
-          name,
-          paddy_variety: paddyVariety
-        }, config);
+        await axios.put(`${API_URL}/${selectedFarmer._id}`, { name, paddy_variety: paddyVariety }, config);
         alert("✅ Details Updated!");
       } else {
-        // ➕ ADD new farmer
-        await axios.post(API_URL, {
-          name,
-          village: villageName, 
-          paddy_variety: paddyVariety,
-          phone: "0000000000"
-        }, config);
+        await axios.post(API_URL, { name, village: villageName, paddy_variety: paddyVariety, phone: "0000000000" }, config);
         alert("✅ Farmer Added!");
       }
-      
       resetForm();
       fetchFarmers(); 
     } catch (error) { alert("Error saving farmer"); }
   };
 
   const handleDeleteFarmer = async () => {
-      if (!selectedFarmer) return;
-      if (!window.confirm(`⚠️ PERMANENTLY DELETE ${selectedFarmer.name}? This will erase all their transaction history.`)) return;
-
-      try {
-          const token = localStorage.getItem('token');
-          await axios.delete(`${API_URL}/${selectedFarmer._id}`, { 
-              headers: { Authorization: `Bearer ${token}` } 
-          });
-          resetForm();
-          fetchFarmers();
-          alert("🗑️ Farmer deleted successfully");
-      } catch (error) { alert("Error deleting farmer"); }
+    if (!selectedFarmer) return;
+    if (!window.confirm(`⚠️ PERMANENTLY DELETE ${selectedFarmer.name}? This will erase all history.`)) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/${selectedFarmer._id}`, { headers: { Authorization: `Bearer ${token}` } });
+      resetForm();
+      fetchFarmers();
+      alert("🗑️ Farmer deleted");
+    } catch (error) { alert("Error deleting farmer"); }
   };
 
   const resetForm = () => {
-    setName('');
-    setPaddyVariety('');
-    setSelectedFarmer(null);
-    setIsSelectionMode(false);
+    setName(''); setPaddyVariety(''); setSelectedFarmer(null); setIsSelectionMode(false);
   };
 
   const handleFarmerClick = (farmer) => {
-      if (isSelectionMode) {
-          // If in Edit Mode, select the farmer and fill the form
-          if (selectedFarmer?._id === farmer._id) {
-              setSelectedFarmer(null);
-              setName('');
-              setPaddyVariety('');
-          } else {
-              setSelectedFarmer(farmer);
-              setName(farmer.name);
-              setPaddyVariety(farmer.paddy_variety);
-          }
+    if (isSelectionMode) {
+      if (selectedFarmer?._id === farmer._id) {
+        setSelectedFarmer(null); setName(''); setPaddyVariety('');
       } else {
-          // Normal Mode: Navigate to details
-          navigate(`/farmer/${farmer._id}`);
+        setSelectedFarmer(farmer); setName(farmer.name); setPaddyVariety(farmer.paddy_variety);
       }
+    } else {
+      navigate(`/farmer/${farmer._id}`);
+    }
   };
 
-  const filteredFarmers = farmers.filter(farmer => 
+  const filteredFarmers = farmers.filter(farmer =>
     farmer.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Preserved counts feature
-  const activeCount = farmers.filter(f => f.isActive !== false).length;
-  const inactiveCount = farmers.filter(f => f.isActive === false).length;
+  const activeCount   = farmers.filter(f => f.isActive !== false).length;
+  const settledCount  = farmers.filter(f => f.isActive === false).length;
 
-  // --- 🎨 FULL STYLES PRESERVED ---
-  const containerStyle = {
-    paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top, 50px)' : '20px',
-    paddingLeft: '20px',
-    paddingRight: '20px',
-    paddingBottom: '40px',
-    width: "100%", 
-    maxWidth: "500px", 
-    margin: "0 auto", 
-    display: "flex", 
-    flexDirection: "column", 
-    gap: "20px",
-    backgroundColor: "#F4F7FA", 
-    minHeight: "100vh",
-    boxSizing: "border-box"
-  };
+  // Helper: determine if a farmer is "settled"
+  const isSettled = (farmer) => farmer.isActive === false;
 
   return (
-    <div style={containerStyle}>
+    <div className="vd-container">
       
-      {/* 🔝 HEADER & COUNTS (ALL FEATURES PRESERVED) */}
-      <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "18px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <button 
-                  onClick={() => navigate('/records')} 
-                  style={{ cursor: "pointer", padding:"10px 14px", backgroundColor: "#fff", border: "1px solid #ddd", borderRadius: "12px", fontWeight: "bold" }}
-                >
-                  ←
-                </button>
-                <h2 style={{ margin: 0, fontSize: "19px", fontWeight: "800", color: "#1a1a1a" }}>{villageName}</h2>
-            </div>
-            
-            <div style={{ display: "flex", gap: "8px" }}>
-                {/* 🗑️ Delete button appears only after selection in Edit Mode */}
-                {isSelectionMode && selectedFarmer && (
-                    <button 
-                      onClick={handleDeleteFarmer}
-                      style={{ backgroundColor: "#fff0f0", color: "#fa5252", border: "1px solid #ffaeb1", padding: "10px 14px", borderRadius: "12px", fontWeight: "bold", fontSize: "12px" }}
-                    >
-                      Delete
-                    </button>
-                )}
-                {/* ✏️ Clear Edit Toggle Button */}
-                <button 
-                  onClick={() => isSelectionMode ? resetForm() : setIsSelectionMode(true)}
-                  style={{ 
-                    backgroundColor: isSelectionMode ? "#1a1a1a" : "#E3F2FD", 
-                    color: isSelectionMode ? "white" : "#2196F3", 
-                    border: "none", padding: "10px 16px", borderRadius: "12px", fontWeight: "bold" 
-                  }}
-                >
-                    {isSelectionMode ? "Done" : "Edit"}
-                </button>
-            </div>
+      {/* ── Header Card ── */}
+      <div className="vd-header-card">
+        <div className="vd-header-top" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <div style={{ flex: 1 }}>
+            <button onClick={() => navigate('/records')} className="vd-back-btn">← Back</button>
+          </div>
+          
+          <h2 className="vd-title" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', margin: 0, fontSize: '24px', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>{villageName}</h2>
+          
+          <div className="vd-btn-group" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            {isSelectionMode && selectedFarmer && (
+              <button onClick={handleDeleteFarmer} className="vd-delete-btn">Delete</button>
+            )}
+            <button 
+              onClick={() => isSelectionMode ? resetForm() : setIsSelectionMode(true)}
+              className="vd-edit-btn"
+              style={{ 
+                backgroundColor: isSelectionMode ? "#e2e8f0" : "#eff6ff", 
+                color: isSelectionMode ? "#1e293b" : "#6366f1"
+              }}
+            >
+              {isSelectionMode ? "Done" : "Edit"}
+            </button>
+          </div>
         </div>
         
-        <div style={{ display: "flex", gap: "10px" }}>
-            <div style={{ flex: 1, backgroundColor: "#E8F5E9", padding: "12px", borderRadius: "14px", textAlign: "center" }}>
-                <span style={{ display: "block", fontSize: "11px", color: "#2E7D32", fontWeight: "800", letterSpacing: "0.5px" }}>ACTIVE</span>
-                <span style={{ fontSize: "22px", fontWeight: "900", color: "#2E7D32" }}>{activeCount}</span>
-            </div>
-            <div style={{ flex: 1, backgroundColor: "#f1f3f5", padding: "12px", borderRadius: "14px", textAlign: "center" }}>
-                <span style={{ display: "block", fontSize: "11px", color: "#666", fontWeight: "800", letterSpacing: "0.5px" }}>SETTLED</span>
-                <span style={{ fontSize: "22px", fontWeight: "900", color: "#666" }}>{inactiveCount}</span>
-            </div>
+        {/* ── Stats Row ── */}
+        <div className="vd-stats-row">
+          <div className="vd-stat-box active">
+            <span className="vd-stat-label active">NOT SETTLED</span>
+            <span className="vd-stat-number active">{activeCount}</span>
+          </div>
+          <div className="vd-stat-box settled">
+            <span className="vd-stat-label settled">SETTLED</span>
+            <span className="vd-stat-number settled">{settledCount}</span>
+          </div>
         </div>
       </div>
 
-      {/* SEARCH (Preserved) */}
-      <div style={{ position: "relative" }}>
+      {/* ── Search ── */}
+      <div style={{ position: "relative", zIndex: 1 }}>
         <input 
-            type="text" 
-            placeholder="🔍 Search Farmer Name..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: "100%", padding: "16px", fontSize: "16px", borderRadius: "16px", border: "1px solid #eee", outline: "none", backgroundColor: "#fff", boxShadow: "0 4px 10px rgba(0,0,0,0.03)", boxSizing: "border-box" }}
+          type="text" 
+          placeholder="🔍 Search farmer name..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="vd-search-input"
         />
       </div>
 
-      {/* LIST (Updated with Selection Logic) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {filteredFarmers.map((farmer, index) => (
-          <div 
-            key={farmer._id} 
-            onClick={() => handleFarmerClick(farmer)} 
-            style={{ 
-                padding: "16px", 
-                borderRadius: "16px", 
-                cursor: "pointer", 
-                backgroundColor: selectedFarmer?._id === farmer._id ? "#FFFDE7" : "#ffffff",
-                display: "flex", alignItems: "center", gap: "15px", 
-                boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
-                borderLeft: farmer.isActive === false ? "6px solid #adb5bd" : "6px solid #4CAF50",
-                border: selectedFarmer?._id === farmer._id ? "2px solid #FBC02D" : "none",
-                opacity: (isSelectionMode && selectedFarmer && selectedFarmer._id !== farmer._id) ? 0.6 : 1,
-                transition: "0.2s all ease"
-            }}
-          >
-            <div style={{ 
-              backgroundColor: selectedFarmer?._id === farmer._id ? "#FBC02D" : "#1a1a1a", 
-              color: "white", width: "35px", height: "35px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "14px" 
-            }}>
+      {/* ── Farmer List ── */}
+      <div className="vd-list">
+        {filteredFarmers.length === 0 && (
+          <p style={{ textAlign: 'center', color: '#475569', padding: '20px', fontStyle: 'italic' }}>
+            No farmers found.
+          </p>
+        )}
+        {filteredFarmers.map((farmer, index) => {
+          const settled   = isSettled(farmer);
+          const isSelected = selectedFarmer?._id === farmer._id;
+          const isDimmed  = isSelectionMode && selectedFarmer && !isSelected;
+
+          return (
+            <div 
+              key={farmer._id} 
+              onClick={() => handleFarmerClick(farmer)} 
+              className={[
+                'vd-farmer-card',
+                isSelected  ? 'is-selected' : '',
+                settled     ? 'is-settled'  : 'is-active',
+                isDimmed    ? 'is-dimmed'   : '',
+              ].filter(Boolean).join(' ')}
+            >
+              {/* Index Circle */}
+              <div className={`vd-index-circle ${isSelected ? 'selected-circle' : ''}`}>
                 {index + 1}
-            </div>
-            
-            <div style={{ flex: 1 }}>
-                <strong style={{ fontSize: "17px", color: "#1a1a1a", fontWeight: "700" }}>
-                    {farmer.name}
-                </strong> 
-                <br/>
-                <span style={{ color: "#495057", backgroundColor: "#e9ecef", padding: "2px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", marginTop: "6px", display: "inline-block", textTransform: "uppercase" }}>
-                    {farmer.paddy_variety}
+              </div>
+              
+              {/* Farmer Info */}
+              <div className="vd-farmer-info">
+                <strong className="vd-farmer-name">{farmer.name}</strong>
+                <span className="vd-paddy-tag">{farmer.paddy_variety}</span>
+              </div>
+              
+              {/* ✅ Settled / Not Settled Badge */}
+              {!isSelectionMode && (
+                <span className={`vd-status-badge ${settled ? 'settled' : 'not-settled'}`}>
+                  <span className="vd-status-dot" />
+                  {settled ? 'Settled' : 'Not Settled'}
                 </span>
-            </div>
-            
-            {isSelectionMode && (
-                <div style={{ color: selectedFarmer?._id === farmer._id ? "#FBC02D" : "#ddd", fontSize: "20px" }}>
-                    {selectedFarmer?._id === farmer._id ? "●" : "○"}
+              )}
+
+              {/* Selection Radio */}
+              {isSelectionMode && (
+                <div className="vd-radio" style={{ color: isSelected ? "#f59e0b" : "#334155" }}>
+                  {isSelected ? "●" : "○"}
                 </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* DYNAMIC FORM (Handles both Add and Edit) */}
-      <div style={{ backgroundColor: "#fff", padding: "24px", borderRadius: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.06)", marginTop: "10px" }}>
-        <h3 style={{ margin: "0 0 18px 0", color: "#1a1a1a", fontSize: "18px", fontWeight: "800", textAlign: "center" }}>
-            {selectedFarmer ? "✏️ Edit Farmer Details" : "➕ Add New Farmer"}
+      {/* ── Add / Edit Form ── */}
+      <div className="vd-form-card">
+        <h3 className="vd-form-title">
+          {selectedFarmer ? "✏️ Edit Farmer Details" : "➕ Add New Farmer"}
         </h3>
-        <form onSubmit={handleSaveFarmer} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <input 
-              type="text" 
-              placeholder="Full Name" 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              style={{ padding: "14px", border: "1px solid #eee", borderRadius: "12px", backgroundColor: "#f8f9fa", fontSize: "16px", outline: "none" }} 
-            />
-            <input 
-              type="text" 
-              placeholder="Paddy Variety (e.g. BPT, RNR)" 
-              value={paddyVariety} 
-              onChange={(e) => setPaddyVariety(e.target.value)} 
-              style={{ padding: "14px", border: "1px solid #eee", borderRadius: "12px", backgroundColor: "#f8f9fa", fontSize: "16px", outline: "none" }} 
-            />
-            <button 
-              type="submit" 
-              style={{ 
-                padding: "16px", 
-                backgroundColor: selectedFarmer ? "#2196F3" : "#4CAF50", 
-                color: "white", 
-                border: "none", 
-                borderRadius: "14px", 
-                fontWeight: "800", 
-                fontSize: "16px",
-                boxShadow: selectedFarmer ? "0 6px 15px rgba(33, 150, 243, 0.3)" : "0 6px 15px rgba(76, 175, 80, 0.3)",
-                marginTop: "5px"
-              }}
-            >
-              {selectedFarmer ? "Update Details" : "Add Farmer"}
+        <form onSubmit={handleSaveFarmer} className="vd-form">
+          <input 
+            type="text" 
+            placeholder="Full Name" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            className="vd-input"
+          />
+          <input 
+            type="text" 
+            placeholder="Paddy Variety (e.g. BPT, RNR)" 
+            value={paddyVariety} 
+            onChange={(e) => setPaddyVariety(e.target.value)} 
+            className="vd-input"
+          />
+          <button 
+            type="submit" 
+            className="vd-submit-btn"
+            style={{ 
+              background: selectedFarmer
+                ? "linear-gradient(135deg, #3b82f6, #1d4ed8)"
+                : "linear-gradient(135deg, #22c55e, #16a34a)",
+              boxShadow: selectedFarmer
+                ? "0 6px 20px rgba(59,130,246,0.35)"
+                : "0 6px 20px rgba(34,197,94,0.35)"
+            }}
+          >
+            {selectedFarmer ? "Update Details" : "Add Farmer"}
+          </button>
+          {isSelectionMode && (
+            <button type="button" onClick={resetForm} className="vd-cancel-btn">
+              Cancel / Clear
             </button>
-            {isSelectionMode && (
-                <button 
-                  type="button" 
-                  onClick={resetForm} 
-                  style={{ padding: "10px", background: "none", border: "none", color: "#666", fontWeight: "bold", cursor: "pointer" }}
-                >
-                    Cancel / Clear
-                </button>
-            )}
+          )}
         </form>
       </div>
     </div>

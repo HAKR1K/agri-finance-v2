@@ -1,0 +1,524 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── CONTAINER ── */
+.fd-container {
+    width: 100%;
+    margin: 0 auto;
+    background-color: #f4f6fb;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 80px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── SETTLEMENT SUMMARY CARD ── */
+.fd-summary-card {
+  background: #ffffff;
+  border: 1.5px solid #e4e9f2;
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.fd-summary-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 1px;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+}
+
+.fd-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.fd-summary-label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.fd-summary-value {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.fd-divider {
+  border: none;
+  border-top: 1.5px dashed #e2e8f0;
+  margin: 12px 0;
+}
+
+.fd-summary-total-row, .fd-summary-yield-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.fd-summary-total-row {
+  padding-top: 12px;
+  color: #0f172a;
+}
+
+.fd-summary-yield-row {
+  padding-top: 8px;
+  color: #16a34a;
+}
+
+.fd-summary-remaining {
+  background: #f8fafc;
+  margin: 16px -24px -24px;
+  padding: 20px 24px;
+  border-top: 1.5px solid #e2e8f0;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* ── NAV HEADER ── */
+.fd-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.97);
+    padding: calc(env(safe-area-inset-top, 24px) + 24px) 24px 24px;
+    border-bottom: 1.5px solid #e4e9f2;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+/* ── BACK BUTTON — unified ── */
+.fd-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 9px 16px 9px 12px;
+    background: #ffffff;
+    border: 1.5px solid #dde3ee;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.18s ease;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+    letter-spacing: 0.1px;
+}
+
+
+.fd-back-btn:hover {
+    background: #f0f4ff;
+    border-color: #6366f1;
+    color: #6366f1;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.14);
+}
+
+.fd-back-btn:hover::before {
+    transform: translateX(-2px);
+}
+
+/* ── SHARE BUTTON ── */
+.fd-share-btn {
+    cursor: pointer;
+    padding: 9px 18px;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.18s ease;
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+}
+
+.fd-share-btn:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.15);
+}
+
+/* ── PROFILE ── */
+.fd-profile-header {
+    text-align: center;
+    margin: 18px 16px 20px;
+}
+
+.fd-profile-name {
+    margin: 0 0 4px;
+    font-size: 24px;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.fd-profile-sub {
+    margin: 0 0 10px;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.fd-status-pill {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 8px 20px;
+    border-radius: 24px;
+    border: none;
+    font-weight: 800;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.18s ease;
+}
+
+.fd-balance-card {
+    margin: 14px 0 0;
+    padding: 18px 20px;
+    border-radius: 18px;
+}
+
+.fd-balance-label {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    display: block;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.fd-balance-amount {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.1;
+}
+
+/* ── SECTION CARD ── */
+.fd-section-card {
+    background-color: #fff;
+    padding: 0;
+    border-radius: 18px;
+    margin: 0 16px 14px;
+    border: 1.5px solid #e4e9f2;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* ── SECTION HEADER ── */
+.fd-section-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px 12px;
+    border-bottom: 1.5px solid #f1f5f9;
+    gap: 8px;
+}
+
+.fd-section-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.fd-section-total {
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    margin-left: auto;
+}
+
+.fd-btn-group {
+    display: flex;
+    gap: 8px;
+    margin-left: 8px;
+}
+
+/* ── EDIT / DONE BUTTON — new unified style ── */
+.fd-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    border: 1.5px solid;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.fd-edit-btn.inactive {
+    background: #f8faff;
+    border-color: #dde3ee;
+    color: #475569;
+}
+
+.fd-edit-btn.inactive:hover {
+    background: #f0f4ff;
+    border-color: #a5b4fc;
+    color: #4f46e5;
+}
+
+.fd-edit-btn.active {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(79, 70, 229, 0.25);
+}
+
+.fd-edit-btn.active:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+}
+
+/* ── DELETE BUTTON ── */
+.fd-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff1f2;
+    color: #e11d48;
+    border: 1.5px solid #fecdd3;
+    border-radius: 9px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.fd-delete-btn:hover {
+    background: #ffe4e6;
+    border-color: #fda4af;
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.15);
+}
+
+/* ── TABLES ── */
+.fd-table-wrapper {
+    overflow-x: auto;
+    padding: 0 16px 4px;
+}
+
+.fd-table {
+    width: 100%;
+    min-width: 500px; /* Push Note column off-screen for mobile */
+    border-collapse: collapse;
+}
+
+.fd-th {
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 11px;
+    border-bottom: 1.5px solid #f1f5f9;
+    color: #94a3b8;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.fd-td {
+    padding: 12px 8px;
+    font-size: 13px;
+    border-bottom: 1px solid #f8fafc;
+    color: #334155;
+    vertical-align: middle;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+}
+
+.fd-td-amount {
+    font-weight: 800;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ── INTEREST DATE BAR ── */
+.fd-interest-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #f8faff;
+    border-bottom: 1px solid #e4e9f2;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* ── FORM CARD ── */
+.fd-form-card {
+    padding: 22px 18px;
+    border-radius: 20px;
+    border: 1.5px solid #e4e9f2;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    margin: 0 16px 16px;
+    background: #fff;
+}
+
+.fd-form-title {
+    margin: 0 0 16px;
+    font-size: 17px;
+    font-weight: 800;
+    text-align: center;
+    color: #0f172a;
+}
+
+.fd-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fd-input {
+    padding: 12px 14px;
+    border: 1.5px solid #dde3ee;
+    border-radius: 11px;
+    width: 100%;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    color: #0f172a;
+    background: #fafbff;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    outline: none;
+}
+
+.fd-input:focus {
+    border-color: #6366f1;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ── MISC BOX ── */
+.fd-misc-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    background: #eff6ff;
+    border-radius: 14px;
+    border: 1.5px solid #bfdbfe;
+}
+
+.fd-row-gap {
+    display: flex;
+    gap: 10px;
+}
+
+.fd-misc-type-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1.5px solid #93c5fd;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.18s;
+}
+
+/* ── SUBMIT BUTTON ── */
+.fd-submit-btn {
+    padding: 15px;
+    color: white;
+    border: none;
+    border-radius: 13px;
+    font-weight: 900;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+    letter-spacing: 0.3px;
+}
+
+.fd-submit-btn:not(:disabled):hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.fd-submit-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* ── CANCEL BUTTON ── */
+.fd-cancel-btn {
+    flex: 1;
+    padding: 13px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 13px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.18s;
+}
+
+.fd-cancel-btn:hover:not(:disabled) {
+    background: #e2e8f0;
+    color: #374151;
+}
+
+/* ── LOADING OVERLAY ── */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(244, 246, 251, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    gap: 14px;
+}
+
+.spinner {
+    width: 46px;
+    height: 46px;
+    border: 3px solid #e0e7ff;
+    border-top: 3px solid #6366f1;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-weight: 800;
+    color: #6366f1;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+}
