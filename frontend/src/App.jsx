@@ -35,17 +35,22 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Listen for hardware back button on Mobile (Android)
-    const backButtonListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-      if (window.location.pathname === '/' || window.location.pathname === '/login') {
-        CapacitorApp.exitApp(); // Exit app if at root or login
-      } else {
-        navigate(-1); // Otherwise standard route back
-      }
-    });
+    let backButtonListener;
+    const setupListener = async () => {
+      backButtonListener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+        if (window.location.pathname === '/' || window.location.pathname === '/login') {
+          CapacitorApp.exitApp(); // Exit app if at root or login
+        } else {
+          navigate(-1); // Otherwise standard route back
+        }
+      });
+    };
+    setupListener();
 
     return () => {
-      backButtonListener.remove();
+      if (backButtonListener) {
+        backButtonListener.remove();
+      }
     };
   }, [navigate]);
 

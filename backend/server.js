@@ -27,7 +27,7 @@ app.use(cors({
         }
         
         // Allow Vercel preview deployments
-        const isVercelPreview = origin.includes("vercel.app") && origin.includes("agrifinance");
+        const isVercelPreview = origin.includes("vercel.app") && (origin.includes("agrifinance") || origin.includes("agri-finance"));
         if (isVercelPreview) {
             return callback(null, true);
         }

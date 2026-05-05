@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://agri-finance-v2-ani8.onrender.com/api';
+export const API_BASE_URL = 'https://agrifinance-app.onrender.com/api';
