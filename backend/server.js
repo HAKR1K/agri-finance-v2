@@ -24,24 +24,8 @@ const allowedOrigins = [
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // 1. Allow requests with no origin (like mobile apps, Postman, or curl)
-        if (!origin) return callback(null, true);
-
-        // 2. Check if the origin is in our allowed list
-        const isAllowed = allowedOrigins.includes(origin);
-
-        // 3. Check for development origins (Localhost / Capacitor)
-        const isDev = origin.startsWith('http://localhost') || origin.startsWith('capacitor://localhost');
-
-        // 4. Check for Vercel dynamic previews
-        const isVercel = origin.endsWith('.vercel.app') && (origin.includes("agrifinance") || origin.includes("agri-finance"));
-
-        if (isAllowed || isDev || isVercel) {
-            callback(null, true);
-        } else {
-            console.log("❌ CORS Blocked Origin:", origin);
-            callback(new Error('Not allowed by CORS'));
-        }
+        // ALWAYS allow all origins for now to debug deployment
+        callback(null, true);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
