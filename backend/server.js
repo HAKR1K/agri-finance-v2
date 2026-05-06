@@ -22,7 +22,7 @@ const allowedOrigins = [
     'https://agrifinance-app.onrender.com'
 ];
 
-app.use(cors({
+const corsOptions = {
     origin: function (origin, callback) {
         // 1. Allow requests with no origin (like mobile apps, Postman, or curl)
         if (!origin) return callback(null, true);
@@ -46,12 +46,15 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    // Essential: This ensures the browser's "Preflight" check gets a 200 OK 
     optionsSuccessStatus: 200 
-}));
+};
 
-// IMPORTANT: This explicitly handles the OPTIONS request for all routes
-app.options('*', cors());
+// Apply CORS to all routes
+app.use(cors(corsOptions));
+
+// FIXED: Use a regular expression instead of '*' to avoid the PathError crash
+// This handles the "Preflight" OPTIONS requests for every route
+app.options(/(.*)/, cors(corsOptions));
 
 // 🛡️ SECURITY MIDDLEWARE
 // app.use(helmet()); // Temporarily disabled for CORS debugging
