@@ -15,13 +15,12 @@ const Load = require('./models/Load');
 
 const app = express();
 
-// 🛡️ SECURITY & MIDDLEWARE
-// Helmet helps secure your Express apps by setting various HTTP headers.
+// 🛡️ 1. SECURITY MIDDLEWARE
 app.use(helmet({
-    crossOriginResourcePolicy: false, // Helps with debugging resource sharing
+    crossOriginResourcePolicy: false, 
 }));
 
-// 🛡️ CORS MIDDLEWARE
+// 🛡️ 2. CORS CONFIGURATION (The "Nuclear" Fix)
 const allowedOrigins = [
     'https://agri-finance-v2-six.vercel.app',
     'https://agrifinance-app.onrender.com'
@@ -29,20 +28,40 @@ const allowedOrigins = [
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allowing all origins for debugging as per your current setup, 
-        // but structured to easily switch back to allowedOrigins list.
-        callback(null, true);
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            // During debugging, we allow all. Change this for strict production.
+            callback(null, true); 
+        }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    optionsSuccessStatus: 200 
+    optionsSuccessStatus: 204 
 };
 
+// Apply standard CORS middleware
 app.use(cors(corsOptions));
 
-// Handle Preflight OPTIONS requests for all routes
-app.options(/(.*)/, cors(corsOptions));
+// 🛡️ 3. MANUAL PREFLIGHT HANDLER (Ensures Render sends headers for OPTIONS)
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin) || !origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Instantly return 204 for preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+    }
+    next();
+});
 
 app.use(express.json());
 
@@ -90,14 +109,12 @@ const getTodayIsoDateUtc = () => new Date().toISOString().split('T')[0];
 
 const toUtcMidnightMs = (value) => {
     if (!value) return null;
-
     if (value instanceof Date) {
         const y = value.getUTCFullYear();
         const m = value.getUTCMonth();
         const d = value.getUTCDate();
         return Date.UTC(y, m, d);
     }
-
     if (typeof value === 'string') {
         const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if (isoMatch) {
@@ -107,7 +124,6 @@ const toUtcMidnightMs = (value) => {
             return Date.UTC(y, m, d);
         }
     }
-
     const dt = new Date(value);
     if (Number.isNaN(dt.getTime())) return null;
     return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate());
