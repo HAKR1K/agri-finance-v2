@@ -16,30 +16,42 @@ const Load = require('./models/Load');
 const app = express();
 
 // 🛡️ CORS MIDDLEWARE (must come before helmet)
+// Define the allowed origins in an array for better readability
+const allowedOrigins = [
+    'https://agri-finance-v2-six.vercel.app',
+    'https://agrifinance-app.onrender.com'
+];
+
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
+        // 1. Allow requests with no origin (like mobile apps, Postman, or curl)
         if (!origin) return callback(null, true);
-        
-        // Allow all localhost and capacitor origins for development
-        if (origin.startsWith('http://localhost') || origin.startsWith('capacitor://localhost')) {
-            return callback(null, true);
+
+        // 2. Check if the origin is in our allowed list
+        const isAllowed = allowedOrigins.includes(origin);
+
+        // 3. Check for development origins (Localhost / Capacitor)
+        const isDev = origin.startsWith('http://localhost') || origin.startsWith('capacitor://localhost');
+
+        // 4. Check for Vercel dynamic previews
+        const isVercel = origin.endsWith('.vercel.app') && (origin.includes("agrifinance") || origin.includes("agri-finance"));
+
+        if (isAllowed || isDev || isVercel) {
+            callback(null, true);
+        } else {
+            console.log("❌ CORS Blocked Origin:", origin);
+            callback(new Error('Not allowed by CORS'));
         }
-        
-        // Allow Vercel preview deployments
-        const isVercelPreview = origin.includes("vercel.app") && (origin.includes("agrifinance") || origin.includes("agri-finance"));
-        if (isVercelPreview) {
-            return callback(null, true);
-        }
-        
-        // Block other origins
-        console.log("❌ CORS Blocked Origin:", origin);
-        return callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    // Essential: This ensures the browser's "Preflight" check gets a 200 OK 
+    optionsSuccessStatus: 200 
 }));
+
+// IMPORTANT: This explicitly handles the OPTIONS request for all routes
+app.options('*', cors());
 
 // 🛡️ SECURITY MIDDLEWARE
 // app.use(helmet()); // Temporarily disabled for CORS debugging
