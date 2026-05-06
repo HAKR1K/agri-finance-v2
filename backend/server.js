@@ -15,8 +15,13 @@ const Load = require('./models/Load');
 
 const app = express();
 
-// 🛡️ CORS MIDDLEWARE (must come before helmet)
-// Define the allowed origins in an array for better readability
+// 🛡️ SECURITY & MIDDLEWARE
+// Helmet helps secure your Express apps by setting various HTTP headers.
+app.use(helmet({
+    crossOriginResourcePolicy: false, // Helps with debugging resource sharing
+}));
+
+// 🛡️ CORS MIDDLEWARE
 const allowedOrigins = [
     'https://agri-finance-v2-six.vercel.app',
     'https://agrifinance-app.onrender.com'
@@ -24,7 +29,8 @@ const allowedOrigins = [
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // ALWAYS allow all origins for now to debug deployment
+        // Allowing all origins for debugging as per your current setup, 
+        // but structured to easily switch back to allowedOrigins list.
         callback(null, true);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -33,15 +39,11 @@ const corsOptions = {
     optionsSuccessStatus: 200 
 };
 
-// Apply CORS to all routes
 app.use(cors(corsOptions));
 
-// FIXED: Use a regular expression instead of '*' to avoid the PathError crash
-// This handles the "Preflight" OPTIONS requests for every route
+// Handle Preflight OPTIONS requests for all routes
 app.options(/(.*)/, cors(corsOptions));
 
-// 🛡️ SECURITY MIDDLEWARE
-// app.use(helmet()); // Temporarily disabled for CORS debugging
 app.use(express.json());
 
 // ✅ DB CONNECTION
@@ -57,7 +59,9 @@ const authMiddleware = (req, res, next) => {
         const verified = jwt.verify(token.replace("Bearer ", ""), process.env.JWT_SECRET);
         req.user = verified;
         next();
-    } catch (err) { res.status(400).json({ error: "Invalid Token" }); }
+    } catch (err) { 
+        res.status(400).json({ error: "Invalid Token" }); 
+    }
 };
 
 // 📧 EMAIL CONFIG
@@ -81,14 +85,9 @@ transporter.verify((error) => {
 });
 
 // --- 🧮 Interest Helpers ---
-// Matches the frontend "accrued interest" logic:
-// - diffDays is floored
-// - months = diffDays / 30
-// - interest = principal * rate(%) * months / 100
-const getTodayIsoDateUtc = () => new Date().toISOString().split('T')[0]; // YYYY-MM-DD (UTC)
 
-// Normalizes any provided date into a UTC-midnight timestamp so day-differences
-// don't drift due to timezone or time components.
+const getTodayIsoDateUtc = () => new Date().toISOString().split('T')[0];
+
 const toUtcMidnightMs = (value) => {
     if (!value) return null;
 
@@ -117,7 +116,6 @@ const toUtcMidnightMs = (value) => {
 const calculateAccruedInterest = (principal, rate, startDate, targetDate) => {
     const p = Number(principal);
     const r = Number(rate);
-    // If rate or principal is invalid/missing, treat interest as 0.
     if (!Number.isFinite(p) || !Number.isFinite(r) || p <= 0 || r <= 0) return 0;
     if (!startDate) return 0;
     if (!targetDate) targetDate = getTodayIsoDateUtc();
@@ -130,14 +128,12 @@ const calculateAccruedInterest = (principal, rate, startDate, targetDate) => {
     if (diffTime <= 0) return 0;
 
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const months = diffDays / 30; // standard commercial month
+    const months = diffDays / 30; 
     const interest = (p * r * months) / 100;
-    // Round to 2 decimals to stabilize DB values and sums
     return Number(interest.toFixed(2));
 };
 
 const getTransactionInterest = (t, farmer) => {
-    // If interest_date isn't present, calculate dynamically
     let targetDate = t.interest_date;
     if (!targetDate) {
         if (farmer && farmer.isActive === false && farmer.settledDate) {
@@ -265,13 +261,11 @@ app.delete('/api/villages/:id', authMiddleware, async (req, res) => {
         const village = await Village.findOne({ _id: req.params.id, user: req.user.id, deleted: { $ne: true } });
         if (!village) return res.status(404).json({ error: "Village not found" });
 
-        // Soft delete farmers belonging to this village
         await Farmer.updateMany(
             { village: village.name, user: req.user.id },
             { $set: { deleted: true } }
         );
 
-        // Soft delete the village and clear its farmer list
         await Village.updateOne({ _id: req.params.id }, { $set: { deleted: true, farmers: [] } });
         res.json({ message: "Deleted" });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -286,7 +280,6 @@ app.put('/api/villages/:id/restore', authMiddleware, async (req, res) => {
         );
         if (!village) return res.status(404).json({ error: "Archived village not found" });
 
-        // Restore the farmers that belong to this village
         await Farmer.updateMany(
             { village: village.name, user: req.user.id, deleted: true },
             { $set: { deleted: false } }
@@ -300,7 +293,6 @@ app.delete('/api/villages/:id/permanent', authMiddleware, async (req, res) => {
     try {
         const village = await Village.findOne({ _id: req.params.id, user: req.user.id, deleted: true });
         if (!village) return res.status(404).json({ error: "Archived village not found" });
-        // Permanently delete the village document
         await Village.deleteOne({ _id: req.params.id, user: req.user.id });
         res.json({ message: "Village permanently deleted" });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -368,9 +360,6 @@ app.delete('/api/farmers/:id', authMiddleware, async (req, res) => {
     try {
         const farmer = await Farmer.findOne({ _id: req.params.id, user: req.user.id, deleted: { $ne: true } });
         if (!farmer) return res.status(404).json({ error: "Farmer not found" });
-        // Optional: Remove from village array. Since we might restore, let's just leave the array as is.
-        // await removeFarmerFromVillage(farmer._id, farmer.village, req.user.id);
-        
         await Farmer.updateOne({ _id: req.params.id, user: req.user.id }, { $set: { deleted: true } });
         res.json({ message: "Farmer archived" });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -385,7 +374,6 @@ app.put('/api/farmers/:id/restore', authMiddleware, async (req, res) => {
         );
         if (!farmer) return res.status(404).json({ error: "Archived farmer not found" });
 
-        // Check if the original village exists
         let village = await Village.findOne({ name: farmer.village, user: req.user.id });
         if (village) {
             if (village.deleted) {
@@ -397,7 +385,6 @@ app.put('/api/farmers/:id/restore', authMiddleware, async (req, res) => {
             await village.save();
         }
 
-        // Ensure the farmer's ID is in the village array
         if (!village.farmers.includes(farmer._id)) {
             village.farmers.push(farmer._id);
             await village.save();
@@ -416,7 +403,6 @@ app.delete('/api/farmers/:id/permanent', authMiddleware, async (req, res) => {
     try {
         const farmer = await Farmer.findOne({ _id: req.params.id, user: req.user.id, deleted: true });
         if (!farmer) return res.status(404).json({ error: "Archived farmer not found" });
-        // Permanently delete the farmer document
         await Farmer.deleteOne({ _id: req.params.id, user: req.user.id });
         res.json({ message: "Farmer permanently deleted" });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -446,7 +432,6 @@ app.post('/api/farmers/:id/transaction', authMiddleware, async (req, res) => {
         const village = await Village.findOne({ user: req.user.id, name: farmer.village, deleted: { $ne: true } });
         const transactionData = { ...req.body, villageId: village ? village._id : null };
 
-        // Ensure interest is stored accurately
         if (['Loan', 'Investment', 'Money Lent'].includes(transactionData.type)) {
             let targetDate = transactionData.interest_date;
             if (!targetDate) {
@@ -457,7 +442,7 @@ app.post('/api/farmers/:id/transaction', authMiddleware, async (req, res) => {
                 transactionData.amount,
                 transactionData.interest_rate,
                 transactionData.date,
-                transactionData.interest_date
+                targetDate
             );
             transactionData.interest = computed;
         }
@@ -476,7 +461,6 @@ app.put('/api/farmers/:id/transaction/:transId', authMiddleware, async (req, res
         if (!transaction) return res.status(404).json({ error: "Transaction not found" });
         Object.assign(transaction, req.body);
 
-        // Recompute interest after any update to ensure DB column stays correct.
         if (['Loan', 'Investment', 'Money Lent'].includes(transaction.type)) {
             let targetDate = transaction.interest_date;
             if (!targetDate) {
@@ -487,7 +471,7 @@ app.put('/api/farmers/:id/transaction/:transId', authMiddleware, async (req, res
                 transaction.amount,
                 transaction.interest_rate,
                 transaction.date,
-                transaction.interest_date
+                targetDate
             );
             transaction.interest = computed;
         }
@@ -512,12 +496,9 @@ app.delete('/api/farmers/:id/transaction/:transId', authMiddleware, async (req, 
 app.get('/api/analysis', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        
-        // 1. Fetch only Farmers & Villages belonging to THIS user
         const villages = await Village.find({ user: userId, deleted: { $ne: true } });
-        
-        // Clean up any farmers with invalid village names (for non-deleted only)
         const villageNames = villages.map(v => v.name);
+        
         await Farmer.updateMany(
             { user: userId, deleted: { $ne: true }, village: { $nin: [...villageNames, 'Unassigned'] } },
             { $set: { village: 'Unassigned' } }
@@ -527,7 +508,6 @@ app.get('/api/analysis', authMiddleware, async (req, res) => {
         let totalInvestment = 0, totalFertilizerCost = 0, totalMisc = 0, totalYield = 0, totalRepayment = 0;
         let villageStats = {}, fertStats = {};
 
-        // 2. 🔄 VILLAGE-DRIVEN LOOP: Starts only with villages in your active records
         const spendTypes = ['Money Lent', 'Loan', 'Investment', 'Fertilizer', 'Miscellaneous'];
         const activeFarmers = farmers.filter(f => f.isActive !== false && f.status !== 'Inactive');
 
@@ -570,7 +550,6 @@ app.get('/api/analysis', authMiddleware, async (req, res) => {
             villagers: village.villagers
         }));
 
-        // 3. Calculate global totals (Independent of village names)
         activeFarmers.forEach(farmer => {
             farmer.transactions.forEach(t => {
                 const amt = parseFloat(t.amount) || 0;
@@ -592,7 +571,6 @@ app.get('/api/analysis', authMiddleware, async (req, res) => {
             });
         });
 
-        // 4. Fetch deleted villages for archive section
         const deletedVillages = await Village.find({ user: userId, deleted: true });
         const deletedFarmers = await Farmer.find({ user: userId, deleted: true });
 
@@ -607,7 +585,6 @@ app.get('/api/analysis', authMiddleware, async (req, res) => {
             villageData, 
             finance, 
             fertStats, 
-            deletedVillages, 
             deletedVillages, 
             deletedFarmers 
         });
@@ -638,7 +615,7 @@ app.get('/api/advanced-analysis', authMiddleware, async (req, res) => {
                 quintals: totalQuintals,
                 variety: f.paddy_variety || "Unknown Variety"
             };
-        }).sort((a,b) => b.bags - a.bags); // Sort largest bag count first
+        }).sort((a,b) => b.bags - a.bags);
         
         let advancedVillageData = [];
         let grandTotalLoan = 0;
@@ -650,14 +627,9 @@ app.get('/api/advanced-analysis', authMiddleware, async (req, res) => {
         let grandTotalLoanInterest = 0;
         let grandTotalInvestmentInterest = 0;
         let grandTotalYieldAmount = 0;
-        let grandYieldDetails = {}; // Grouped by paddy_variety
-
-        // NOTE: We used to perform a sequential sync-save loop here for interest drift.
-        // It has been removed to fix the "buffering" / timeout issues.
-        // The stats calculation below already uses getTransactionInterest(t) to ensure accuracy.
+        let grandYieldDetails = {};
 
         villages.forEach(v => {
-            // Include ALL farmers for this village (settled and not settled)
             const villagers = farmers.filter(f => {
                 if (f.villageId && f.villageId.toString() === v._id.toString()) return true;
                 return f.village === v.name;
@@ -675,7 +647,7 @@ app.get('/api/advanced-analysis', authMiddleware, async (req, res) => {
             let villageYieldAmount = 0;
             
             let fertilizerDetails = {};
-            let villageYieldDetails = {}; // Grouped by paddy_variety
+            let villageYieldDetails = {};
 
             villagers.forEach(farmer => {
                 const variety = farmer.paddy_variety || "Unknown Variety";
@@ -689,7 +661,8 @@ app.get('/api/advanced-analysis', authMiddleware, async (req, res) => {
                     } 
                     else if (t.type === 'Repayment') {
                         villageLoanAmount -= amt;
-                    }                    else if (t.type === 'Investment') {
+                    } 
+                    else if (t.type === 'Investment') {
                         villageInvestmentAmount += amt;
                         villageInvestmentInterest += getTransactionInterest(t, farmer);
                     }
@@ -703,7 +676,6 @@ app.get('/api/advanced-analysis', authMiddleware, async (req, res) => {
                     else if (t.type === 'Yield') {
                         villageYieldAmount += amt;
                         grandTotalYieldAmount += amt;
-                        
                         const bag = parseFloat(t.bag_count) || 0;
                         const qnt = parseFloat(t.quintals) || 0;
 
