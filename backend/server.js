@@ -27,27 +27,10 @@ const allowedOrigins = [
 ];
 
 const corsOptions = {
-    origin: function (origin, callback) {
-        // 1. Allow server-to-server or mobile app requests (no origin header)
-        if (!origin) return callback(null, true);
-        
-        // 2. Allow exact matches in the allowed list
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        
-        // 3. Allow local development (Localhost / Capacitor)
-        if (origin.startsWith('http://localhost') || origin.startsWith('capacitor://localhost')) {
-            return callback(null, true);
-        }
-        
-        // 4. Allow any Vercel dynamic preview URL for this project
-        if (origin.endsWith('.vercel.app') && (origin.includes("agrifinance") || origin.includes("agri-finance"))) {
-            return callback(null, true);
-        }
-        
-        // 5. Fallback: Log unrecognized origins but allow them for now to guarantee no downtime.
-        console.warn("⚠️ Unrecognized Origin Allowed:", origin);
-        return callback(null, true);
-    },
+    // Setting origin to true tells the cors middleware to dynamically 
+    // set Access-Control-Allow-Origin to whatever the request's Origin is.
+    // This allows ALL requests from ANY domain instantly.
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
