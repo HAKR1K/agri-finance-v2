@@ -20,7 +20,7 @@ app.use(helmet({
     crossOriginResourcePolicy: false, 
 }));
 
-// 🛡️ 2. CORS CONFIGURATION (The "Nuclear" Fix)
+// 🛡️ 2. BULLETPROOF CORS CONFIGURATION
 const allowedOrigins = [
     'https://agri-finance-v2-six.vercel.app',
     'https://agrifinance-app.onrender.com'
@@ -28,40 +28,37 @@ const allowedOrigins = [
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
+        // 1. Allow server-to-server or mobile app requests (no origin header)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-            callback(null, true);
-        } else {
-            // During debugging, we allow all. Change this for strict production.
-            callback(null, true); 
+        
+        // 2. Allow exact matches in the allowed list
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        
+        // 3. Allow local development (Localhost / Capacitor)
+        if (origin.startsWith('http://localhost') || origin.startsWith('capacitor://localhost')) {
+            return callback(null, true);
         }
+        
+        // 4. Allow any Vercel dynamic preview URL for this project
+        if (origin.endsWith('.vercel.app') && (origin.includes("agrifinance") || origin.includes("agri-finance"))) {
+            return callback(null, true);
+        }
+        
+        // 5. Fallback: Log unrecognized origins but allow them for now to guarantee no downtime.
+        console.warn("⚠️ Unrecognized Origin Allowed:", origin);
+        return callback(null, true);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
-    optionsSuccessStatus: 204 
+    optionsSuccessStatus: 204
 };
 
-// Apply standard CORS middleware
+// Apply CORS globally. This automatically handles OPTIONS preflights without needing custom middleware.
 app.use(cors(corsOptions));
 
-// 🛡️ 3. MANUAL PREFLIGHT HANDLER (Ensures Render sends headers for OPTIONS)
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin) || !origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-    // Instantly return 204 for preflight requests
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(204);
-    }
-    next();
-});
+// Explicitly handle all preflight OPTIONS requests using regex to avoid Express 5 PathError
+app.options(/(.*)/, cors(corsOptions));
 
 app.use(express.json());
 
