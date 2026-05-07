@@ -120,15 +120,15 @@ const Analysis = () => {
       allFarmers.forEach((farmer, index) => {
         let balance = 0;
         const tableRows = farmer.transactions.map(t => {
-          const isMoneyGiven = ['Money Lent', 'Fertilizer', 'Miscellaneous'].includes(t.type);
+          const isPaid = ['Yield', 'Repayment'].includes(t.type);
           const val = parseFloat(t.amount) || 0;
-          if (isMoneyGiven) balance += val; else balance -= val;
+          if (isPaid) balance -= val; else balance += val;
           return [
             new Date(t.date).toLocaleDateString(),
             t.type,
             t.fertilizer_name ? `${t.fertilizer_name} (x${t.quantity})` : (t.details || '-'),
-            isMoneyGiven ? `+${val.toLocaleString('en-IN')}` : '-',
-            !isMoneyGiven ? `-${val.toLocaleString('en-IN')}` : '-'
+            !isPaid ? `+${val.toLocaleString('en-IN')}` : '-',
+            isPaid ? `-${val.toLocaleString('en-IN')}` : '-'
           ];
         });
 

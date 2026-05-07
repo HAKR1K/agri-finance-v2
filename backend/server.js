@@ -594,7 +594,6 @@ app.get('/api/analysis', authMiddleware, async (req, res) => {
                 if (['Money Lent', 'Loan', 'Investment'].includes(t.type)) totalInvestment += amt;
                 if (t.type === 'Repayment') {
                     totalRepayment += amt;
-                    totalInvestment -= amt;
                 }
                 
                 if (t.type === 'Fertilizer') {
@@ -698,7 +697,8 @@ app.get('/api/advanced-analysis', authMiddleware, async (req, res) => {
                         villageLoanInterest += getTransactionInterest(t, farmer);
                     } 
                     else if (t.type === 'Repayment') {
-                        villageLoanAmount -= amt;
+                        // Keep repayments separate or handle as needed, but don't subtract from Loan side
+                        // villageRepaymentAmount += amt; // If we wanted to track village-level repayments
                     } 
                     else if (t.type === 'Investment') {
                         villageInvestmentAmount += amt;
