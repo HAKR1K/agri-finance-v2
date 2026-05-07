@@ -24,5 +24,11 @@ dist-ssr
 *.sw?
 .env           
 build
-android/app/buildandroid/
-android/
+
+# Android Project
+android/app/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/captures/
+android/*.iml
