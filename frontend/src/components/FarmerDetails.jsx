@@ -118,7 +118,8 @@ const FarmerDetails = () => {
     setRemarks(t.details || '');
     setAmount(t.amount);
     setInterestRate(t.interest_rate || '');
-    setHasInterest(!!t.interest_rate);
+    // If it's a Loan/Investment/Money Lent, default hasInterest to true unless explicitly zeroed
+    setHasInterest(t.interest_rate !== undefined && t.interest_rate !== null ? true : true);
     setInterestAmount(t.interest || '');
     const target = t.interest_date ? t.interest_date.split('T')[0] : '';
     setInterestTargetDate(target);
@@ -131,6 +132,24 @@ const FarmerDetails = () => {
       setBags(t.bag_count || '');
       setQuintals(t.quintals || '');
       setPricePerQuintal(t.price_per_quintal || '');
+    } else if (t.type === 'Miscellaneous' && t.details) {
+      if (t.details.startsWith('Labour:')) {
+        setMiscType('Labour');
+        const match = t.details.match(/Labour:\s*([\d.]+)\s*x\s*₹([\d.]+)/);
+        if (match) {
+          setMiscCount(match[1]);
+          setMiscRate(match[2]);
+        }
+      } else if (t.details.startsWith('Machine:')) {
+        setMiscType('Machine');
+        const match = t.details.match(/Machine:\s*([\d.]+)\s*hrs\s*x\s*₹([\d.]+)/);
+        if (match) {
+          setMiscCount(match[1]);
+          setMiscRate(match[2]);
+        }
+      } else {
+        setMiscType('Others');
+      }
     }
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
@@ -189,9 +208,9 @@ const FarmerDetails = () => {
         bag_count: type === 'Yield' ? bags : undefined,
         quintals: type === 'Yield' ? quintals : undefined,
         price_per_quintal: type === 'Yield' ? pricePerQuintal : undefined,
-        interest_rate: ((type === 'Loan' || type === 'Investment') && hasInterest) ? interestRate : undefined,
-        interest: ((type === 'Loan' || type === 'Investment') && hasInterest) ? interestAmount : undefined,
-        interest_date: (((type === 'Loan' || type === 'Investment') && hasInterest) && interestDate !== '') ? interestDate : undefined
+        interest_rate: (['Loan', 'Investment', 'Money Lent'].includes(type) && hasInterest) ? interestRate : undefined,
+        interest: (['Loan', 'Investment', 'Money Lent'].includes(type) && hasInterest) ? interestAmount : undefined,
+        interest_date: ((['Loan', 'Investment', 'Money Lent'].includes(type) && hasInterest) && interestDate !== '') ? interestDate : undefined
       };
       const config = { headers: { Authorization: `Bearer ${token}` } };
       if (editingId) await axios.put(`${API_URL}/transaction/${editingId}`, payload, config);
@@ -634,8 +653,10 @@ const FarmerDetails = () => {
           <h3 className="fd-form-title">{editingId ? "✎ Edit Transaction" : "+ Add Transaction"}</h3>
           <form onSubmit={handleSubmit} className="fd-form">
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="fd-input" />
-            <select value={type} onChange={(e) => setType(e.target.value)} className="fd-input" disabled={!!editingId}>
+            <select value={type} onChange={(e) => setType(e.target.value)} className="fd-input">
               <option value="Loan">💰 Loan</option>
+              <option value="Money Lent">💸 Money Lent</option>
+              <option value="Investment">📈 Investment</option>
               <option value="Fertilizer">📦 Fertilizer</option>
               <option value="Yield">🌾 Yield (Harvest)</option>
               <option value="Miscellaneous">🛠 Miscellaneous</option>
@@ -690,7 +711,7 @@ const FarmerDetails = () => {
               <input type="number" placeholder="Amount (₹)" value={amount} onChange={(e) => setAmount(e.target.value)} className="fd-input" />
             )}
 
-            {(type === 'Loan' || type === 'Investment') && (
+            {(type === 'Loan' || type === 'Investment' || type === 'Money Lent') && (
               <div style={{ display: 'flex', gap: '15px', padding: '5px 5px 10px 5px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
                   <input type="radio" checked={hasInterest} onChange={() => setHasInterest(true)} style={{ accentColor: '#2563eb', cursor: 'pointer', width: '16px', height: '16px' }} />
@@ -703,7 +724,7 @@ const FarmerDetails = () => {
               </div>
             )}
 
-            {(type === 'Loan' || type === 'Investment') && hasInterest && (
+            {(type === 'Loan' || type === 'Investment' || type === 'Money Lent') && hasInterest && (
               <>
                 <div className="fd-row-gap">
                   <input type="number" step="0.01" placeholder="Interest Rate (%)" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} className="fd-input" />
