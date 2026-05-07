@@ -423,10 +423,32 @@ app.put('/api/farmers/:id/status', authMiddleware, async (req, res) => {
 
 app.post('/api/farmers/:id/transaction', authMiddleware, async (req, res) => {
     try {
-        const farmer = await Farmer.findOne({ _id: req.params.id, user: req.user.id });
-        if (!farmer) return res.status(404).send("Not found");
+        const farmer = await Farmer.findById(req.params.id);
+        
+        if (!farmer || farmer.deleted) {
+            return res.status(404).json({ error: "Farmer not found" });
+        }
+
+        if (farmer.user.toString() !== req.user.id) {
+            return res.status(403).json({ error: "Unauthorized access to this farmer" });
+        }
         const village = await Village.findOne({ user: req.user.id, name: farmer.village, deleted: { $ne: true } });
         const transactionData = { ...req.body, villageId: village ? village._id : null };
+
+        // 🧹 Robust Sanitization: Prevent CastErrors by cleaning all numeric and date fields
+        const numericFields = ['amount', 'interest_rate', 'interest', 'quantity', 'price_per_unit', 'bag_count', 'quintals', 'price_per_quintal'];
+        numericFields.forEach(field => {
+            if (transactionData[field] === "" || transactionData[field] === null || transactionData[field] === undefined) {
+                delete transactionData[field];
+            } else {
+                const val = Number(transactionData[field]);
+                if (isNaN(val)) delete transactionData[field];
+                else transactionData[field] = val;
+            }
+        });
+
+        if (transactionData.interest_date === "" || transactionData.interest_date === null) delete transactionData.interest_date;
+        if (transactionData.date === "" || transactionData.date === null) delete transactionData.date;
 
         if (['Loan', 'Investment', 'Money Lent'].includes(transactionData.type)) {
             let targetDate = transactionData.interest_date;
@@ -446,7 +468,11 @@ app.post('/api/farmers/:id/transaction', authMiddleware, async (req, res) => {
         farmer.transactions.push(transactionData);
         await farmer.save();
         res.json(farmer);
-    } catch (err) { res.status(500).json({ error: "Failed to add" }); }
+    } catch (err) { 
+        console.error("❌ Transaction Error:", err.message);
+        const errorDetails = err.errors ? Object.values(err.errors).map(e => e.message).join(", ") : err.message;
+        res.status(500).json({ error: "Failed to add", details: errorDetails }); 
+    }
 });
 
 app.put('/api/farmers/:id/transaction/:transId', authMiddleware, async (req, res) => {
@@ -455,6 +481,22 @@ app.put('/api/farmers/:id/transaction/:transId', authMiddleware, async (req, res
         if (!farmer) return res.status(404).json({ error: "Farmer not found" });
         const transaction = farmer.transactions.id(req.params.transId);
         if (!transaction) return res.status(404).json({ error: "Transaction not found" });
+
+        // 🧹 Robust Sanitization: Prevent CastErrors by cleaning all numeric and date fields
+        const numericFields = ['amount', 'interest_rate', 'interest', 'quantity', 'price_per_unit', 'bag_count', 'quintals', 'price_per_quintal'];
+        numericFields.forEach(field => {
+            if (req.body[field] === "" || req.body[field] === null || req.body[field] === undefined) {
+                delete req.body[field];
+            } else {
+                const val = Number(req.body[field]);
+                if (isNaN(val)) delete req.body[field];
+                else req.body[field] = val;
+            }
+        });
+
+        if (req.body.interest_date === "" || req.body.interest_date === null) delete req.body.interest_date;
+        if (req.body.date === "" || req.body.date === null) delete req.body.date;
+
         Object.assign(transaction, req.body);
 
         if (['Loan', 'Investment', 'Money Lent'].includes(transaction.type)) {

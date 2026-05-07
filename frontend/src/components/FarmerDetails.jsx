@@ -191,14 +191,17 @@ const FarmerDetails = () => {
         price_per_quintal: type === 'Yield' ? pricePerQuintal : undefined,
         interest_rate: ((type === 'Loan' || type === 'Investment') && hasInterest) ? interestRate : undefined,
         interest: ((type === 'Loan' || type === 'Investment') && hasInterest) ? interestAmount : undefined,
-        interest_date: ((type === 'Loan' || type === 'Investment') && hasInterest) ? interestDate : undefined
+        interest_date: (((type === 'Loan' || type === 'Investment') && hasInterest) && interestDate !== '') ? interestDate : undefined
       };
       const config = { headers: { Authorization: `Bearer ${token}` } };
       if (editingId) await axios.put(`${API_URL}/transaction/${editingId}`, payload, config);
       else await axios.post(`${API_URL}/transaction`, payload, config);
       handleCancel(); fetchFarmerData(); alert("✅ Saved!");
     } catch (error) {
-      alert("Error saving transaction");
+      console.error("Save Error:", error.response?.data || error.message);
+      const data = error.response?.data;
+      const msg = data?.details || data?.error || error.message || "Error saving transaction";
+      alert("❌ " + msg);
     } finally {
       setIsSaving(false);
     }
