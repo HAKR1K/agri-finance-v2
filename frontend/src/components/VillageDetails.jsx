@@ -29,7 +29,8 @@ const VillageDetails = () => {
   const fetchFarmers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}?village=${villageName}`, {
+      const response = await axios.get(API_URL, {
+        params: { village: villageName },
         headers: { Authorization: `Bearer ${token}` }
       });
       setFarmers(response.data);
@@ -54,8 +55,14 @@ const VillageDetails = () => {
         alert("✅ Farmer Added!");
       }
       resetForm();
-      fetchFarmers(); 
-    } catch (error) { alert("Error saving farmer"); }
+      // Small delay helps ensure database consistency before re-fetching on some mobile environments
+      setTimeout(() => {
+        fetchFarmers();
+      }, 500); 
+    } catch (error) { 
+      console.error("Save error:", error);
+      alert("Error saving farmer"); 
+    }
   };
 
   const handleDeleteFarmer = async () => {
